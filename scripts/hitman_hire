@@ -32,7 +32,7 @@ use lib "$RealBin/../lib";
 use Hitman;
 
 Hitman::parse_args();
-my $inputs = $inputs = [ map { $_->{'sff'}, $_->{'mapping'} } @{$ARGV{'--in_files'}} ];
+my $inputs = [ map { $_->{'sff'}, $_->{'mapping'} } @{$ARGV{'--in_files'}} ];
 Hitman::run( $inputs );
 
 exit;
