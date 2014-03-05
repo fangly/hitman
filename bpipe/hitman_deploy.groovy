@@ -7,29 +7,38 @@
 // Usage example: bpipe run pipeline_QA.groovy sediments.fastq
 
 // Options:
+
 // Quality score from which to start truncating the 3' end of a read
+QUAL_TRUNC=13
 // e.g. if you pick 16, all quality scores will be >=17 after truncation
 // Q20: 1% , Q19: 1.3%, Q18: 1.6%, Q17: 2%, Q16: 2.5%, Q15: 3.2%, Q14: 4%, Q13: 5%
-// Ambiguities such as N typically have Q0. A Q12 threshold will essentially
-// eliminate Ns and other very low quality bases from the reads.
-QUAL_TRUNC=12
+// Ambiguities such as N typically have Q0. A Q13 threshold will essentially
+// eliminate Ns and other low quality bases from the reads.
+
 // Filter out reads with over this % of expected errors (based on quality scores)
-// This should remove reads with many low quality bases left.
-EE_PERC=1.0
+EE_PERC=3.0
+
 // Flag to perform or skip the Acacia denoising step
 DENOISE=1
-// Read trimming/discard length: 250bp captures the whole V6-V7 region using the
-// ACE 926F-1392R primers (V6-V8)
+
+// Read trimming/discard length
 TRIM_LEN=250
+// 250bp captures the whole V6-V7 region using the ACE 926F-1392R primers (V6-V8)
 
 ////////////////////////////////////////////////////////////////////////////////
 
 
-about title: "16S analysis pipeline - Quality Assurance"
+//////////
+// TODO
+// * Use very clean reads (qual_trunc and ee_filt) to determine OTUs,
+//   but try to classify even not so clean reads (ee_filt only) into OTUs.
+//   This means implementing ee_filt before qual_trunc, saving READS into variable
+//////////
 
-// One could potentially go farther if more reads need to be retained, by only
-// using very clean reads to determine the OTU reference sequences, but trying
-// to match even not so clean reads to each OTU.
+about title: "16S analysis pipeline - Quality Assurance" 
+
+
+LOG_FILE=""
 
 acacia = {
    doc title: "Denoise FASTQ reads with Acacia"
@@ -144,7 +153,6 @@ ee_filter = {
 }
 
 
-LOG_FILE=""
 @Transform("stats")
 seq_stats = {
    doc title: "Record basic FASTQ sequence statistics (length, quality) into a log file"
@@ -156,7 +164,7 @@ seq_stats = {
       exec """
          if [ ! -e $LOG_FILE ]; then
             echo "Creating log file $LOG_FILE" &&
-            echo -e "stage\\t#seq\\tminL\\tmedL\\tmaxL\\tminQ\\tmedQ\\tmaxQ\\t#N" > $LOG_FILE;
+            echo -e "stage\\tnum_seq\\tmin_L\\tmed_L\\tmax_L\\tmin_Q\\tmed_Q\\tmax_Q\\tnum_N" > $LOG_FILE;
          fi &&
          echo "Appending stage $stage to log file $LOG_FILE" &&
          module load usearch/7.0.1001 &&

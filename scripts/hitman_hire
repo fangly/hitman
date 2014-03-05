@@ -1,0 +1,39 @@
+#! /usr/bin/env perl
+
+
+=head1 DESCRIPTION
+
+hitman_hire gathers sequences of the desired samples from SFF and mapping files,
+prepares them for analysis and produces a FASTQ file.
+
+=head1 MANDATORY ARGUMENTS
+
+=over
+
+=item -i <sff> <mapping> | --in_files <sff> <mapping>
+
+Input SFF and mapping files. The files must have *.sff and *.mapping extensions,
+respectively. Repeat this argument as many times as needed. 
+
+=for Euclid:
+   repeatable
+   sff.type: readable
+   mapping.type: readable
+
+=back
+
+=cut
+
+
+use strict;
+use warnings;
+use FindBin qw($RealBin);
+use lib "$RealBin/../lib";
+use Hitman;
+
+Hitman::parse_args();
+my $inputs = $inputs = [ map { $_->{'sff'}, $_->{'mapping'} } @{$ARGV{'--in_files'}} ];
+Hitman::run( $inputs );
+
+exit;
+

@@ -1,0 +1,37 @@
+#! /usr/bin/env perl
+
+
+=head1 DESCRIPTION
+
+hitman_deploy performs quality filtering and trimming on the input FASTQ
+sequences, and produces a FASTA file.
+
+=head1 MANDATORY ARGUMENTS
+
+=over
+
+=item -s <seqs> | --seqs <seqs>
+
+Input FASTQ file containing the sequences from the previous step, hitman_hire.
+The file must have a *.fastq extension.
+
+=for Euclid:
+   seqs.type: readable
+
+=back
+
+=cut
+
+
+use strict;
+use warnings;
+use FindBin qw($RealBin);
+use lib "$RealBin/../lib";
+use Hitman;
+
+Hitman::parse_args();
+my $inputs = [ $ARGV{'--seqs'} ];
+Hitman::run( $inputs );
+
+exit;
+

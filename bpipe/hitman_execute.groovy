@@ -9,28 +9,42 @@
 // Usage example: bpipe run pipeline_analyze.groovy sediments_QA.fna fwd_primer.fna
 
 // Options:
+
 // Number of threads
 NOF_THREADS=12
+
 // Flag to prevent singleton sequences to constitute an OTU
 EXCLUDE_SINGLETONS=1
+
 // OTU identity (from 0 to 1)
 OTU_MIN_IDENTITY=0.97
+
 // Flag to remove reference-based chimeras
 EXCLUDE_CHIMERAS=1
+
 // Database for chimera detection
 CHIMERA_DB="/srv/db/gold/micrombiomeutils_r20110519_GOLD.fna"
-// Parameters for taxonomic assignment
-TAXO_DB="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_seqs.fna"
+
+// File containing the lineages for the desired taxonomic system
 TAXO_STR="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_taxo.txt"
-// Rule of thumb: >97% indicates the same species, >95% the same genus
+
+// FASTA file containing sequences in the desired taxonomic system
+TAXO_DB="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_seqs.fna"
+
+// Minimum identity for the taxonomic assignment
 TAXO_MIN_IDENTITY=0.90
 //TAXO_MIN_IDENTITY=0.95
+//Rule of thumb: >97% indicates the same species, >95% the same genus
+
 // Samples to merge
 MERGE_SAMPLES=""
+
 // OTUs to remove (case-insensitive)
 REMOVE_OTUS="Eukaryota"
+
 // Rarefaction depth (number of reads per sample)
 RAREFACTION_DEPTH=1000
+
 // CopyRighter gene copy number database
 GCN_DB="/srv/db/copyrighter/ssu_img40_gg201210_merged.txt"
 

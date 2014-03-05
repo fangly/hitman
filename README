@@ -1,2 +1,10 @@
-HiTMAn
-High Throughput Microbial Analysis
+HiTMAn - High Throughput Microbial Analysis
+
+Hitman is a pipeline for analysing 16S rRNA amplicon datasets. Tree steps are
+necessary:
+
+1/ hitman_hire: Collect sequences to analyze from SFF files.
+2/ hitman_deploy: Quality-filter and trim the sequences.
+3/ hitman_execute: Produce a rarefied OTU table with taxonomic assignments.
+
+Run these scripts with the --man flag to learn more about what they do.
