@@ -92,6 +92,19 @@ sub groovy_script {
 }
 
 
+my $groovy_shared;
+sub groovy_shared {
+   # Get the location of the shared Bpipe Groovy modules
+   if (not defined $groovy_shared) {
+      $groovy_shared = catfile(groovy_dir(), 'shared.groovy');
+      if (not -f $groovy_shared) {
+         die "Error: Groovy file '$groovy_shared' does not exist\n";
+      }
+   }
+   return $groovy_dir;
+}
+
+
 sub parse_args {
    # Handle the special case where user wants to list available params
    my %args = map { $_ => undef } @ARGV;
@@ -116,7 +129,7 @@ sub run_hitman {
    }
 
    # Set location of Bpipe shared modules
-   $ENV{'BPIPE_LIB'} = groovy_dir();
+   ###$ENV{'BPIPE_LIB'} = groovy_shared(); # Causes bpipe crash at the moment
 
    # Prepare Bpipe command, e.g.:
    #   bpipe run -p QUAL_TRUNC=13 -d out_dir pipeline.groovy infile1 infile2

@@ -57,39 +57,6 @@ rename_seqs = {
 }
 
 
-//sff2fastq_multi = {
-//   doc title: "Convert SFF files to the FASTQ format"
-//   // Note: sequences are not wrapped
-//   println("input: "+input)
-//   println("input.prefix: "+input.prefix)
-//   println("inputs: "+inputs)
-//   produce("${input.prefix}*.fastq") {
-//      exec """
-//         module load parallel &&
-//         module load sff2fastq &&
-//         parallel "sff2fastq -o {.}.fastq {}" ::: $inputs
-//      """
-//   }
-//   println("output: "+output)
-//}
-
-
-//@Filter("rename_seqs_multi")
-//rename_seqs_multi = {
-//   doc title: "Prefix sequence names based on their filename"
-//   // From a file like "Gasket76.split_libraries.3833.fastq", use the "3833" prefix
-//   // A sequence called "HN758CG01AIWK2" would thus become "3833_HN758CG01AIWK2"
-//   // In comparison, QIIME would call it "3833_1"
-//   // Note: rely on the sequences not being wrapped
-//   exec """
-//      module load parallel &&
-//      ls ${input.prefix}*.fastq | rev | cut -d '.' -f 2 | rev | parallel "
-//         cat ${input.prefix}*{}.fastq | paste - - | perl -p -e 's/^@/\\@{}_/; s/^\\+\\S*/+/' | tr '\\t' '\\n' > ${input.prefix}*{}_renamed.fastq
-//      "
-//   """
-//}
-
-
 @Filter("cat_files")
 cat_files = {
    doc title: "Concatenate all files into a single one"
@@ -101,12 +68,11 @@ cat_files = {
 
 report = {
    println("The outputs are : "+inputs)
-   forward inputs
+   //forward inputs
 }
 
 
 Bpipe.run {
-   //"%.*" * [ mapping2mcf + split_libraries + sff2fastq_multi + rename_seqs_multi ]
    "%.*" * [ mapping2mcf + split_libraries +
              "%.sff" * [ sff2fastq + rename_seqs ] ] + cat_files + report
 }
