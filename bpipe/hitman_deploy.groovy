@@ -35,7 +35,8 @@ TRIM_LEN=250
 //   This means implementing ee_filt before qual_trunc, saving READS into variable
 //////////
 
-about title: "16S analysis pipeline - Quality Assurance" 
+
+about title: "hitman_deploy - Sequence quality assurance" 
 
 
 LOG_FILE=""

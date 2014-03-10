@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-about title: "16S analysis pipeline - Input preparation" 
+about title: "hitman_hire - Prepare sequences for analysis" 
 
 
 @Transform("mcf")

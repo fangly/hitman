@@ -51,7 +51,7 @@ GCN_DB="/srv/db/copyrighter/ssu_img40_gg201210_merged.txt"
 ////////////////////////////////////////////////////////////////////////////////
 
 
-about title: "16S analysis pipeline - OTU analysis" 
+about title: "hitman_execute - Sequence analysis and OTU table creation" 
 
 
 @Transform("otus")
@@ -284,14 +284,15 @@ rarefy = {
 }
 
 
+//
 // CopyRighter
-
+//
 // Heatmap
-
-// alpha diversity
-
-// beta diversity
-
+//
+// Alpha diversity
+//
+// Beta diversity
+//
 
 
 success = {
