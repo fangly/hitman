@@ -6,7 +6,7 @@
 
 =item -l | --list
 
-Simply list available parameters and return.
+Simply list all available optional parameters.
 
 =item -p <param> | --param <param>
 
@@ -61,22 +61,34 @@ package Hitman;
 use strict;
 use warnings;
 use File::Spec::Functions qw(catfile);
-use Getopt::Euclid qw( :defer );
-use IPC::System::Simple qw( runx );
-use Data::Dump qw(dump); #####
+use Getopt::Euclid qw(:defer);
+use IPC::System::Simple qw(runx);
 use FindBin qw($RealBin $Script);
 
 
-my $groovy;
-sub groovy_loc {
-   # Get the location of the Groovy file needed by Bpipe
-   if (not defined $groovy) {
-      $groovy = catfile($RealBin, '..', 'bpipe', "$Script.groovy");
-      if (not -f $groovy) {
-         die "Error: Groovy file '$groovy' does not exist\n";
+my $groovy_dir;
+sub groovy_dir {
+   # Get the location of the directory containing Bpipe Groovy files
+   if (not defined $groovy_dir) {
+      $groovy_dir = catfile($RealBin, '..', 'bpipe');
+      if (not -d $groovy_dir) {
+         die "Error: Directory '$groovy_dir' does not exist\n";
       }
    }
-   return $groovy;
+   return $groovy_dir;
+}
+
+
+my $groovy_script;
+sub groovy_script {
+   # Get the location of the Groovy file needed by Bpipe
+   if (not defined $groovy_script) {
+      $groovy_script = catfile(groovy_dir(), "$Script.groovy");
+      if (not -f $groovy_script) {
+         die "Error: Groovy file '$groovy_script' does not exist\n";
+      }
+   }
+   return $groovy_script;
 }
 
 
@@ -84,7 +96,7 @@ sub parse_args {
    # Handle the special case where user wants to list available params
    my %args = map { $_ => undef } @ARGV;
    if (exists $args{'-l'} || exists $args{'--list'}) {
-      list_params(groovy_loc());
+      list_params(groovy_script());
       exit;
    }
    # Let Getopt::Euclid handle the rest
@@ -93,7 +105,7 @@ sub parse_args {
 }
 
 
-sub run {
+sub run_hitman {
    my ($inputs) = @_;
    # Prepare additional Bpipe parameters
    my @params;
@@ -102,23 +114,29 @@ sub run {
          push @params, '-p', $param;
       }
    }
+
+   # Set location of Bpipe shared modules
+   $ENV{'BPIPE_LIB'} = groovy_dir();
+
    # Prepare Bpipe command, e.g.:
    #   bpipe run -p QUAL_TRUNC=13 -d out_dir pipeline.groovy infile1 infile2
-   my @cmd = ('bpipe', 'run', @params, '-d', $ARGV{'--dir'}, groovy_loc(), @$inputs);
+   my @cmd = ('bpipe', 'run', @params, '-d', $ARGV{'--dir'}, groovy_script(), @$inputs);
+
    # Run Bpipe
    runx( @cmd );
+
    return 1;
 }
 
 
 sub list_params {
-   my ($groovy) = @_;
+   my ($groovy_script) = @_;
    # Read Groovy file and extract header section, between two stretch of
    # '///////' at the top of the file
    my $header;
    {
       local $/ = ('/'x80)."\n";
-      open my $in, '<', $groovy or die "Error: Could not read file '$groovy': $!\n";
+      open my $in, '<', $groovy_script or die "Error: Could not read file '$groovy_script': $!\n";
       <$in>;
       $header = <$in>;
       chomp $header;
@@ -134,7 +152,7 @@ sub list_params {
               "   $desc\n".
               "   Default: $default\n\n";
    }
-   $msg ||= "No parameters\n";
+   $msg ||= "No optional parameters available.\n";
    # Display message
    print $msg;
    return 1;

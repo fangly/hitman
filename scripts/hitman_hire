@@ -33,7 +33,7 @@ use Hitman;
 
 Hitman::parse_args();
 my $inputs = [ map { $_->{'sff'}, $_->{'mapping'} } @{$ARGV{'--in_files'}} ];
-Hitman::run( $inputs );
+Hitman::run_hitman( $inputs );
 
 exit;
 
