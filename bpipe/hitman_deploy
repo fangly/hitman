@@ -155,7 +155,7 @@ ee_filter = {
 
 
 @Transform("stats")
-seq_stats = {
+fastq_stats = {
    doc title: "Record basic FASTQ sequence statistics (length, quality) into a log file"
    // http://www.drive5.com/usearch/manual/fastq_stats.html
    if(LOG_FILE == "") {
@@ -188,7 +188,7 @@ seq_stats = {
 
 
 @Transform("stats")
-seq_stats_fasta = {
+fasta_stats = {
    doc title: "Record basic FASTA sequence statistics (length, quality) into a log file"
    // http://www.drive5.com/usearch/manual/fastq_stats.html
    if(LOG_FILE == "") {
@@ -227,21 +227,21 @@ seq_stats_fasta = {
 
 
 Bpipe.run {
-   seq_stats.using(stage:'initial') +
+   fastq_stats.using(stage:'initial') +
    discard_lax +
-   seq_stats.using(stage:'discard') +
+   fastq_stats.using(stage:'discard') +
    quality_trunc +
-   seq_stats.using(stage:'qtrunc') +
+   fastq_stats.using(stage:'qtrunc') +
    discard_lax +
-   seq_stats.using(stage:'qdiscrd') +
+   fastq_stats.using(stage:'qdiscrd') +
    trim_lax +
-   seq_stats.using(stage:'trim') +
+   fastq_stats.using(stage:'trim') +
    ee_filter +
-   seq_stats.using(stage:'eefilt') +
+   fastq_stats.using(stage:'eefilt') +
    acacia +
-   seq_stats_fasta.using(stage:'acacia') +
+   fasta_stats.using(stage:'acacia') +
    discard_strict +
-   seq_stats_fasta.using(stage:'fdiscrd') +
+   fasta_stats.using(stage:'fdiscrd') +
    trim_strict +
-   seq_stats_fasta.using(stage:'ftrim')
+   fasta_stats.using(stage:'ftrim')
 }
