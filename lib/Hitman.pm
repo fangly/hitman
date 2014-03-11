@@ -11,7 +11,7 @@ Simply list all available optional parameters.
 =item -p <param> | --param <param>
 
 Set an additional parameter. Re-use this argument for each parameter you want to
-add.
+add. Example: "-p DENOISE=1 -p TRIM_LEN=250"
 
 =for Euclid:
    repeatable
