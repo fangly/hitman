@@ -83,25 +83,12 @@ my $groovy_script;
 sub groovy_script {
    # Get the location of the Groovy file needed by Bpipe
    if (not defined $groovy_script) {
-      $groovy_script = catfile(groovy_dir(), "$Script.groovy");
+      $groovy_script = catfile(groovy_dir(), $Script);
       if (not -f $groovy_script) {
          die "Error: Groovy file '$groovy_script' does not exist\n";
       }
    }
    return $groovy_script;
-}
-
-
-my $groovy_shared;
-sub groovy_shared {
-   # Get the location of the shared Bpipe Groovy modules
-   if (not defined $groovy_shared) {
-      $groovy_shared = catfile(groovy_dir(), 'shared.groovy');
-      if (not -f $groovy_shared) {
-         die "Error: Groovy file '$groovy_shared' does not exist\n";
-      }
-   }
-   return $groovy_dir;
 }
 
 
@@ -129,7 +116,7 @@ sub run_hitman {
    }
 
    # Set location of Bpipe shared modules
-   ###$ENV{'BPIPE_LIB'} = groovy_shared(); # Causes bpipe crash at the moment
+   $ENV{'BPIPE_LIB'} = groovy_dir();
 
    # Prepare Bpipe command, e.g.:
    #   bpipe run -p QUAL_TRUNC=13 -d out_dir pipeline.groovy infile1 infile2
@@ -137,6 +124,10 @@ sub run_hitman {
 
    # Run Bpipe
    runx( @cmd );
+
+   ### TODO: DESTROY method to clean up:
+   ###   bpipe stop
+   ###   rm -rf .bpipe/ commandlog.txt
 
    return 1;
 }
