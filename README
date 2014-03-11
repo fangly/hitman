@@ -8,3 +8,15 @@ necessary:
 3/ hitman_execute: Produce a rarefied OTU table with taxonomic assignments.
 
 Run these scripts with the --man flag to learn more about what they do.
+
+
+Dependencies:
+   bpipe
+   sfffile
+   sff2fastq
+   fastx_toolkit
+   acacia
+   usearch
+   emboss
+   bio-community
+
