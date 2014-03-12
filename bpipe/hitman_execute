@@ -51,7 +51,7 @@ GCN_DB="/srv/db/copyrighter/ssu_img40_gg201210_merged.txt"
 ////////////////////////////////////////////////////////////////////////////////
 
 
-about title: "hitman_execute - Sequence analysis and OTU table creation" 
+about title: "hitman_execute - Amplicon analysis and OTU table creation" 
 
 
 @Transform("otus")

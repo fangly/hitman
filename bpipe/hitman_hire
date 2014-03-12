@@ -1,13 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 
-// Given SFF and QIIME mapping files, extract the desired samples into a single
-// FASTQ file.
-// Usage example: bpipe run pipeline_prep.groovy Gasket67.sff Gasket67.mapping Gasket76.sff Gasket76.mapping
+// Given SFF and corresponding QIIME mapping files, extract the sequences from
+// the desired samples and put them in a single FASTQ file.
+// Usage example:
+//    bpipe run hitman_hire Gask67.sff Gask67.mapping Gask76.sff Gask76.mapping
 
 ////////////////////////////////////////////////////////////////////////////////
 
 
-about title: "hitman_hire - Prepare sequences for analysis" 
+about title: "hitman_hire - Prepare amplicons for analysis" 
 
 
 Bpipe.run {

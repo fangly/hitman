@@ -36,10 +36,9 @@ TRIM_LEN=250
 //////////
 
 
-about title: "hitman_deploy - Sequence quality assurance" 
+about title: "hitman_deploy - Amplicon quality assurance" 
 
 
-LOG_FILE=""
 
 acacia = {
    doc title: "Denoise FASTQ reads with Acacia"
@@ -90,8 +89,8 @@ acacia = {
 }
 
 
-@Filter("discard_strict")
-discard_strict = {
+@Filter("rm_small_fasta")
+rm_small_fasta = {
    doc title: "Remove small FASTA reads"
    exec """
       module load fastx_toolkit &&
@@ -100,8 +99,8 @@ discard_strict = {
 }
 
 
-@Filter("discard_lax")
-discard_lax = {
+@Filter("rm_small_fastq")
+rm_small_fastq = {
    doc title: "Remove small FASTQ reads"
    exec """
       module load fastx_toolkit &&
@@ -110,9 +109,9 @@ discard_lax = {
 }
 
 
-@Filter("trim_strict")
-trim_strict = {
-   doc title: "Quality-trim FASTQ reads"
+@Filter("trim_fasta")
+trim_fasta = {
+   doc title: "Quality-trim FASTA reads"
    exec """
       module load fastx_toolkit &&
       fastx_trimmer -i $input.fna -f 1 -l $TRIM_LEN -Q 33 -o $output.fna
@@ -120,9 +119,9 @@ trim_strict = {
 }
 
 
-@Filter("trim_lax")
-trim_lax = {
-   doc title: "Quality-trim FASTA reads"
+@Filter("trim_fastq")
+trim_fastq = {
+   doc title: "Quality-trim FASTQ reads"
    exec """
       module load fastx_toolkit &&
       fastx_trimmer -i $input.fastq -f 1 -l \$(($TRIM_LEN+10)) -Q 33 -o $output.fastq
@@ -153,6 +152,8 @@ ee_filter = {
    """
 }
 
+
+LOG_FILE=""
 
 @Transform("stats")
 fastq_stats = {
@@ -228,20 +229,21 @@ fasta_stats = {
 
 Bpipe.run {
    fastq_stats.using(stage:'initial') +
-   discard_lax +
+   rm_small_fastq +
    fastq_stats.using(stage:'discard') +
    quality_trunc +
    fastq_stats.using(stage:'qtrunc') +
-   discard_lax +
+   rm_small_fastq +
    fastq_stats.using(stage:'qdiscrd') +
-   trim_lax +
+   trim_fastq +
    fastq_stats.using(stage:'trim') +
    ee_filter +
    fastq_stats.using(stage:'eefilt') +
    acacia +
    fasta_stats.using(stage:'acacia') +
-   discard_strict +
+   rm_small_fasta +
    fasta_stats.using(stage:'fdiscrd') +
-   trim_strict +
-   fasta_stats.using(stage:'ftrim')
+   trim_fasta +
+   fasta_stats.using(stage:'ftrim') + 
+   final_report
 }

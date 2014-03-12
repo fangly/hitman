@@ -41,7 +41,7 @@ rename_seqs = {
       PREFIX=`echo $input.fastq | perl -n -e 'print((split /\\./)[-2])'` &&
       cat $input.fastq | paste - - | perl -p -e "s/^@/\\@\${PREFIX}_/; s/^\\+\\S*/+/" | tr '\\t' '\\n' > $output.fastq
    """
-   // Alternatively, use FQTRIM or `usearch -fastq_filter seqs.fna ‑fastqout seqs_new.fna -relabel sample_`
+   // Alternatively, use FQTRIM or `usearch -fastq_filter seqs.fq ‑fastqout seqs_new.fq -relabel sample_`
 }
 
 
