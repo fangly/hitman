@@ -80,7 +80,7 @@ final_report = {
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   println("The outputs are : "+inputs)
+   println("Outputs are : "+inputs)
    //forward inputs
 }
 
@@ -302,5 +302,136 @@ fasta_stats = {
       """
    }
    forward input.fna
+}
+
+
+@Filter("rm_singletons")
+rm_singletons = {
+   doc title: "Remove singleton reads",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   if (EXCLUDE_SINGLETONS == 1) {
+      // http://drive5.com/usearch/manual/sortbysize.html
+      // usearch -sortbysize derep.fasta -output derep2.fasta -minsize 2
+      exec """
+         NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
+         echo "Removing \$NOF_SINGLETONS singletons!" &&
+         module load usearch/7.0.1001 &&
+         usearch -sortbysize $input.otus -output $output.otus -minsize 2
+      """
+   } else {
+      exec """
+         NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
+         echo "Not removing \$NOF_SINGLETONS singletons..." &&
+         cp $input.otus $output.otus
+      """
+   }
+}
+
+
+@Filter("otu_clustering")
+otu_clustering = {
+   doc title: "Cluster reads into OTUs, remove de novo chimeras",
+       desc:  """Parameters:
+                    'perc', the minimum identity % required (e.g. 97%)""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   // http://www.drive5.com/usearch/manual/cluster_otus.html
+   // http://drive5.com/python/fasta_number_py.html
+   // usearch -cluster_otus derep2.fasta -otus otus.fasta -otuid 0.97
+   def otuid = perc / 100
+   exec """
+      module load usearch/7.0.1001 &&
+      TEMP_FILE=`mktemp tmp_otu_clustering_XXXXXXXX.otus` &&
+      usearch -cluster_otus $input.otus -otus \$TEMP_FILE -otuid $otuid &&
+      fasta_number.py \$TEMP_FILE OTU_ > $output.otus &&
+      rm \$TEMP_FILE
+   """
+}
+
+
+@Transform("generic")
+uclust2generic = {
+   doc title: "Convert microbial profile from UCLUST format to generic site-by-species",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load usearch/7.0.1001 &&
+      uc2otutab.py $input.uc > $output.generic
+   """
+}
+
+
+@Transform("biom")
+generic2biom = {
+   doc title: "Convert microbial profile from site-by-species generic format to biom",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bio-community &&
+      bc_convert_files -if $input.generic -of biom -op $output.prefix
+   """
+}
+
+
+@filter("desc2id")
+desc2id = {
+   doc title: "Give OTUs the ID that is in their description field",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bio-community &&
+      bc_convert_ids -if $input -ma desc -op $output.prefix
+   """
+}
+
+
+@filter("id2tax")
+id2tax = {
+   doc title: "Replace IDs in microbial profiles by taxonomically-informative IDs",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bio-community &&
+      bc_convert_ids -if $input.biom -bf $input.blast -op $output.prefix
+   """
+}
+
+
+@filter("desc2tax")
+desc2tax = {
+   doc title: "Add taxonomic lineage to an microbial profiles",
+       desc:  """Parameters:
+                    'db', database file containing taxonomic lineages""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bio-community &&
+      bc_add_taxonomy -if $input.biom -tf $db -op $output.prefix
+   """
+}
+
+
+@filter("rarefy")
+rarefy = {
+   doc title: "Rarefy microbial profiles",
+       desc:  """Parameters:
+                    'num', number of reads to rarefy to (e.g. 1000)""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bio-community &&
+      bc_rarefy -if $input -nr inf -ss $num -op $output.prefix
+   """
 }
 

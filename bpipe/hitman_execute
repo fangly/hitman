@@ -16,8 +16,8 @@ NOF_THREADS=12
 // Flag to prevent singleton sequences to constitute an OTU
 EXCLUDE_SINGLETONS=1
 
-// OTU identity (from 0 to 1)
-OTU_MIN_IDENTITY=0.97
+// Minimum identity percent for OTU clustering
+OTU_MIN_IDENTITY=97.0
 
 // Flag to remove reference-based chimeras
 EXCLUDE_CHIMERAS=1
@@ -31,9 +31,9 @@ TAXO_STR="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_taxo
 // FASTA file containing sequences in the desired taxonomic system
 TAXO_DB="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_seqs.fna"
 
-// Minimum identity for the taxonomic assignment
-TAXO_MIN_IDENTITY=0.90
-//TAXO_MIN_IDENTITY=0.95
+// Minimum identity percent for the taxonomic assignment
+TAXO_MIN_IDENTITY=90.0
+//TAXO_MIN_IDENTITY=95.0
 //Rule of thumb: >97% indicates the same species, >95% the same genus
 
 // Samples to merge
@@ -75,57 +75,11 @@ dereplicate = {
 }
 
 
-@Filter("rm_singletons")
-rm_singletons = {
-   doc title: "Remove singleton reads",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   if (EXCLUDE_SINGLETONS == 1) {
-      // http://drive5.com/usearch/manual/sortbysize.html
-      // usearch -sortbysize derep.fasta -output derep2.fasta -minsize 2
-      exec """
-         NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
-         echo "Removing \$NOF_SINGLETONS singletons!" &&
-         module load usearch/7.0.1001 &&
-         usearch -sortbysize $input.otus -output $output.otus -minsize 2
-      """
-   } else {
-      exec """
-         NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
-         echo "Not removing \$NOF_SINGLETONS singletons..." &&
-         cp $input.otus $output.otus
-      """
-   }
-}
-
-
-@Filter("otu_clustering")
-otu_clustering = {
-   doc title: "Cluster reads into OTUs, remove de novo chimeras",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   // http://www.drive5.com/usearch/manual/cluster_otus.html
-   // http://drive5.com/python/fasta_number_py.html
-   // usearch -cluster_otus derep2.fasta -otus otus.fasta -otuid 0.97
-   exec """
-      module load usearch/7.0.1001 &&
-      TEMP_FILE=`mktemp tmp_otu_clustering_XXXXXXXX.otus` &&
-      usearch -cluster_otus $input.otus -otus \$TEMP_FILE -otuid $OTU_MIN_IDENTITY &&
-      fasta_number.py \$TEMP_FILE OTU_ > $output.otus &&
-      rm \$TEMP_FILE
-   """
-}
-
-
 @Filter("rm_chimeras")
 rm_chimeras = {
    doc title: "Chimera filtering using a reference database",
        desc:  """Parameters:
-                    none""",
+                    'db', FASTA file of high-quality, chimera-free sequences""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    if (EXCLUDE_CHIMERAS == 1) {
@@ -134,7 +88,7 @@ rm_chimeras = {
       exec """
          echo "Removing chimeras!" &&
          module load usearch/7.0.1001 &&   
-         usearch -uchime_ref $input.otus -db $CHIMERA_DB -threads $NOF_THREADS -strand plus -nonchimeras $output.otus
+         usearch -uchime_ref $input.otus -db $db -threads $NOF_THREADS -strand plus -nonchimeras $output.otus
       """
    } else {
       exec """
@@ -145,19 +99,11 @@ rm_chimeras = {
 }
 
 
-uparse_otu = segment {
-   // Run the UPARSE OTU clustering pipeline
-   // Input is amplicon reads in FASTA (*.fna)
-   // Output is OTU reference sequences in FASTA (*.otus)
-   dereplicate + rm_singletons + otu_clustering + rm_chimeras
-}
-
-
 @Transform("uc")
 otu_mapping = {
    doc title: "Map each reads to an OTU (if possible)",
        desc:  """Parameters:
-                    none""",
+                    'perc', the minimum identity % required (e.g. 97%)""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    // The uc2otutab.py script expects reads headers with a tag called barcodelabel=
@@ -165,63 +111,16 @@ otu_mapping = {
    // usearch -usearch_global reads.fa -db otus.fa -strand plus -id 0.97 -uc readmap.uc
    // find how many reads did not match (lines that start with an N, i.e. no-hit records)
    // grep -c "^N" readmap.uc
+   def id = perc / 100
    exec """
       module load usearch/7.0.1001 &&
       TEMP_FILE=`mktemp tmp_otu_mapping_XXXXXXXX.fna` &&
       perl -p -e 's/^>(\\S+)_(\\S+)/>\$2;barcodelabel=\$1;/' $input.fna > \$TEMP_FILE &&
-      usearch -usearch_global \$TEMP_FILE -db $input.otus -strand plus -id $OTU_MIN_IDENTITY -threads $NOF_THREADS -uc $output.uc &&
+      usearch -usearch_global \$TEMP_FILE -db $input.otus -strand plus -id $id -threads $NOF_THREADS -uc $output.uc &&
       rm \$TEMP_FILE &&
       NO_MATCH=`grep -c "^N" $output.uc` &&
       echo "Number of non-matching reads: \$NO_MATCH"
    """
-}
-
-
-@Transform("generic")
-uclust2generic = {
-   doc title: "Convert microbial profile from UCLUST format to generic site-by-species",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load usearch/7.0.1001 &&
-      uc2otutab.py $input.uc > $output.generic
-   """
-}
-
-
-@Transform("biom")
-generic2biom = {
-   doc title: "Convert microbial profile from site-by-species generic format to biom",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load bio-community &&
-      bc_convert_files -if $input.generic -of biom -op $output.prefix
-   """
-}
-
-
-@filter("desc2id")
-desc2id = {
-   doc title: "Give OTU the ID that is in their description field",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load bio-community &&
-      bc_convert_ids -if $input -ma desc -op $output.prefix
-   """
-}
-
-
-make_otu_table = segment {
-   // Convert microbial profile from UCLUST format to generic, and then to biom
-   uclust2generic + generic2biom + desc2id
 }
 
 
@@ -248,7 +147,7 @@ trim_db = {
       else
          echo "Re-using trimmed reference sequences in \$TRIMMED_TAXO_DB";
       fi &&
-      ln -s \$TRIMMED_TAXO_DB $output.fna
+      ln -s -f \$TRIMMED_TAXO_DB $output.fna
    """
 }
 
@@ -256,12 +155,13 @@ trim_db = {
 usearch_global = {
    doc title: "Assign taxonomy using USEARCH global alignments",
        desc:  """Parameters:
-                    none""",
+                    'perc', the minimum identity % required (e.g. 97%)""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   def id = perc / 100
    exec """
       module load usearch/7.0.1001 &&
-      usearch -usearch_global $input.otus -db $input.fna -id $TAXO_MIN_IDENTITY -threads $NOF_THREADS -strand plus -blast6out $output.blast
+      usearch -usearch_global $input.otus -db $input.fna -id $id -threads $NOF_THREADS -strand plus -blast6out $output.blast
    """
    // -maxhits (default 0; i.e. ignored)
    //    This indicates the maximum number of hits written to the output files.
@@ -275,41 +175,31 @@ usearch_global = {
 }
 
 
+uparse_otu = segment {
+   // Run the UPARSE OTU clustering pipeline
+   // Input is amplicon reads in FASTA (*.fna)
+   // Output is OTU reference sequences in FASTA (*.otus)
+   dereplicate +
+   rm_singletons +
+   otu_clustering.using(perc:OTU_MIN_IDENTITY) +
+   rm_chimeras.using(db:CHIMERA_DB)
+}
+
+
+make_otu_table = segment {
+   // Convert microbial profile from UCLUST format to generic, and then to biom
+   uclust2generic + generic2biom + desc2id
+}
+
+
 assign_taxo_global = segment {
-   trim_db + usearch_global
-}
-
-
-@filter("id2tax")
-id2tax = {
-   doc title: "Replace IDs in microbial profiles by taxonomically-informative IDs",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load bio-community &&
-      bc_convert_ids -if $input.biom -bf $input.blast -op $output.prefix
-   """
-}
-
-
-@filter("desc2tax")
-desc2tax = {
-   doc title: "Add taxonomic lineage to an microbial profiles",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load bio-community &&
-      bc_add_taxonomy -if $input.biom -tf $TAXO_STR -op $output.prefix
-   """
+   trim_db + usearch_global.using(perc:TAXO_MIN_IDENTITY)
 }
 
 
 add_taxonomy = segment {
-   id2tax + desc2tax
+   id2tax +
+   desc2tax.using(db:TAXO_STR)
 }
 
 
@@ -320,22 +210,7 @@ add_taxonomy = segment {
 //
 // Remove euks
 //
-
-
-@filter("rarefy")
-rarefy = {
-   doc title: "Rarefy microbial profiles to 1,000 reads",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load bio-community &&
-      bc_rarefy -if $input -nr inf -ss $RAREFACTION_DEPTH -op $output.prefix
-   """
-}
-
-
+//  ... rarefaction ...
 //
 // CopyRighter
 //
@@ -347,20 +222,11 @@ rarefy = {
 //
 
 
-success = {
-   doc title: "Report success",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      echo "---> Success!" &&
-      echo "$input1" &&
-      echo "$input2"
-   """
-}
-
-
 Bpipe.run {
-   uparse_otu + otu_mapping + [make_otu_table, assign_taxo_global] + add_taxonomy + rarefy + success
+   uparse_otu +
+   otu_mapping.using(perc:OTU_MIN_IDENTITY) +
+   [make_otu_table, assign_taxo_global] +
+   add_taxonomy +
+   rarefy.using(num:RAREFACTION_DEPTH) +
+   final_report
 }
