@@ -56,7 +56,11 @@ about title: "hitman_execute - Amplicon analysis and OTU table creation"
 
 @Transform("otus")
 dereplicate = {
-   doc title: "Collapse duplicate reads, record their abundance and sort them by abundance"
+   doc title: "Collapse duplicate reads, record their abundance and sort them by abundance",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    // http://drive5.com/usearch/manual/derep_fulllength.html
    // http://drive5.com/usearch/manual/sortbysize.html
    // usearch -derep_fulllength filtered.fasta -output derep.fasta -sizeout
@@ -73,7 +77,11 @@ dereplicate = {
 
 @Filter("rm_singletons")
 rm_singletons = {
-   doc title: "Remove singleton reads"
+   doc title: "Remove singleton reads",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    if (EXCLUDE_SINGLETONS == 1) {
       // http://drive5.com/usearch/manual/sortbysize.html
       // usearch -sortbysize derep.fasta -output derep2.fasta -minsize 2
@@ -95,7 +103,11 @@ rm_singletons = {
 
 @Filter("otu_clustering")
 otu_clustering = {
-   doc title: "Cluster reads into OTUs, remove de novo chimeras"
+   doc title: "Cluster reads into OTUs, remove de novo chimeras",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    // http://www.drive5.com/usearch/manual/cluster_otus.html
    // http://drive5.com/python/fasta_number_py.html
    // usearch -cluster_otus derep2.fasta -otus otus.fasta -otuid 0.97
@@ -111,7 +123,11 @@ otu_clustering = {
 
 @Filter("rm_chimeras")
 rm_chimeras = {
-   doc title: "Chimera filtering using a reference database"
+   doc title: "Chimera filtering using a reference database",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    if (EXCLUDE_CHIMERAS == 1) {
       // http://www.drive5.com/usearch/manual/uchime_ref.html
       // usearch -uchime_ref otus1.fa -db $d/gold.fa -strand plus -nonchimeras otus2.fa
@@ -139,7 +155,11 @@ uparse_otu = segment {
 
 @Transform("uc")
 otu_mapping = {
-   doc title: "Map each reads to an OTU (if possible)"
+   doc title: "Map each reads to an OTU (if possible)",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    // The uc2otutab.py script expects reads headers with a tag called barcodelabel=
    // http://drive5.com/usearch/manual/usearch_global.html
    // usearch -usearch_global reads.fa -db otus.fa -strand plus -id 0.97 -uc readmap.uc
@@ -159,7 +179,11 @@ otu_mapping = {
 
 @Transform("generic")
 uclust2generic = {
-   doc title: "Convert microbial profile from UCLUST format to generic site-by-species"
+   doc title: "Convert microbial profile from UCLUST format to generic site-by-species",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load usearch/7.0.1001 &&
       uc2otutab.py $input.uc > $output.generic
@@ -169,7 +193,11 @@ uclust2generic = {
 
 @Transform("biom")
 generic2biom = {
-   doc title: "Convert microbial profile from site-by-species generic format to biom"
+   doc title: "Convert microbial profile from site-by-species generic format to biom",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load bio-community &&
       bc_convert_files -if $input.generic -of biom -op $output.prefix
@@ -179,7 +207,11 @@ generic2biom = {
 
 @filter("desc2id")
 desc2id = {
-   doc title: "Give OTU the ID that is in their description field"
+   doc title: "Give OTU the ID that is in their description field",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load bio-community &&
       bc_convert_ids -if $input -ma desc -op $output.prefix
@@ -194,7 +226,11 @@ make_otu_table = segment {
 
 
 trim_db = {
-   doc title: "Trim a database of sequences to their amplicon and save it globally"
+   doc title: "Trim a database of sequences to their amplicon and save it globally",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load bioperl &&
       TRIM_LEN=`extract_first_seqs --input $input.fna --number 1 | get_seq_length | cut -f 2` &&
@@ -218,7 +254,11 @@ trim_db = {
 
 
 usearch_global = {
-   doc title: "Assign taxonomy using USEARCH global alignments"
+   doc title: "Assign taxonomy using USEARCH global alignments",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load usearch/7.0.1001 &&
       usearch -usearch_global $input.otus -db $input.fna -id $TAXO_MIN_IDENTITY -threads $NOF_THREADS -strand plus -blast6out $output.blast
@@ -242,7 +282,11 @@ assign_taxo_global = segment {
 
 @filter("id2tax")
 id2tax = {
-   doc title: "Replace IDs in microbial profiles by taxonomically-informative IDs"
+   doc title: "Replace IDs in microbial profiles by taxonomically-informative IDs",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load bio-community &&
       bc_convert_ids -if $input.biom -bf $input.blast -op $output.prefix
@@ -252,7 +296,11 @@ id2tax = {
 
 @filter("desc2tax")
 desc2tax = {
-   doc title: "Add taxonomic lineage to an microbial profiles"
+   doc title: "Add taxonomic lineage to an microbial profiles",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load bio-community &&
       bc_add_taxonomy -if $input.biom -tf $TAXO_STR -op $output.prefix
@@ -276,7 +324,11 @@ add_taxonomy = segment {
 
 @filter("rarefy")
 rarefy = {
-   doc title: "Rarefy microbial profiles to 1,000 reads"
+   doc title: "Rarefy microbial profiles to 1,000 reads",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load bio-community &&
       bc_rarefy -if $input -nr inf -ss $RAREFACTION_DEPTH -op $output.prefix
@@ -296,6 +348,11 @@ rarefy = {
 
 
 success = {
+   doc title: "Report success",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       echo "---> Success!" &&
       echo "$input1" &&
