@@ -309,10 +309,16 @@ fasta_stats = {
 rm_singletons = {
    doc title: "Remove singleton reads",
        desc:  """Parameters:
-                    none""",
+                    'skip', boolean to skip this step (default: 0)""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   if (EXCLUDE_SINGLETONS == 1) {
+   if (skip == 1) {
+      exec """
+         NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
+         echo "Not removing \$NOF_SINGLETONS singletons..." &&
+         cp $input.otus $output.otus
+      """
+   } else {
       // http://drive5.com/usearch/manual/sortbysize.html
       // usearch -sortbysize derep.fasta -output derep2.fasta -minsize 2
       exec """
@@ -320,12 +326,6 @@ rm_singletons = {
          echo "Removing \$NOF_SINGLETONS singletons!" &&
          module load usearch/7.0.1001 &&
          usearch -sortbysize $input.otus -output $output.otus -minsize 2
-      """
-   } else {
-      exec """
-         NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
-         echo "Not removing \$NOF_SINGLETONS singletons..." &&
-         cp $input.otus $output.otus
       """
    }
 }

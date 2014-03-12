@@ -14,7 +14,7 @@
 NOF_THREADS=12
 
 // Flag to prevent singleton sequences to constitute an OTU
-EXCLUDE_SINGLETONS=1
+SKIP_RM_SINGLETONS=0
 
 // Minimum identity percent for OTU clustering
 OTU_MIN_IDENTITY=97.0
@@ -180,7 +180,7 @@ uparse_otu = segment {
    // Input is amplicon reads in FASTA (*.fna)
    // Output is OTU reference sequences in FASTA (*.otus)
    dereplicate +
-   rm_singletons +
+   rm_singletons.using(skip:SKIP_RM_SINGLETONS) +
    otu_clustering.using(perc:OTU_MIN_IDENTITY) +
    rm_chimeras.using(db:CHIMERA_DB)
 }
