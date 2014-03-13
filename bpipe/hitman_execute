@@ -29,6 +29,9 @@ TAXO_STR="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_taxo
 // FASTA file containing sequences in the desired taxonomic system
 TAXO_DB="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_seqs.fna"
 
+// CopyRighter gene copy number database (skip if database is '')
+GCN_DB="/srv/db/copyrighter/ssu_img40_gg201210_merged.txt"
+
 // Minimum identity percent for the taxonomic assignment
 TAXO_MIN_IDENTITY=90.0
 //TAXO_MIN_IDENTITY=95.0
@@ -42,9 +45,6 @@ REMOVE_OTUS="Eukaryota"
 
 // Rarefaction depth (number of reads per sample)
 RAREFACTION_DEPTH=1000
-
-// CopyRighter gene copy number database
-GCN_DB="/srv/db/copyrighter/ssu_img40_gg201210_merged.txt"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -88,9 +88,9 @@ add_taxonomy = segment {
 //
 // Remove euks
 //
-//  ... rarefaction ...
+//  ... rarefaction + copyrighter ...
 //
-// CopyRighter
+// Genus-level summary
 //
 // Heatmap
 //
@@ -106,5 +106,6 @@ Bpipe.run {
    [make_otu_table, assign_taxo_global] +
    add_taxonomy +
    rarefy.using(num:RAREFACTION_DEPTH) +
+   copyrighter.using(db:GCN_DB) +
    final_report
 }
