@@ -92,7 +92,7 @@ Bpipe.run {
    //// TODO: remove_samples + merge_samples + remove_euks
    rarefy.using(num:RAREFACTION_DEPTH) +
    copyrighter.using(db:GCN_DB) +
-   tax_summary.using(lvl:TAXO_LVL) +
+   //// TODO: tax_summary.using(lvl:TAXO_LVL) +
    //// TODO: heatmap
    final_report
 }
