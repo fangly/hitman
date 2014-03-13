@@ -18,7 +18,7 @@ SKIP_RM_SINGLETONS=0
 OTU_MIN_IDENTITY=97.0
 
 // Flag to remove reference-based chimeras
-EXCLUDE_CHIMERAS=1
+SKIP_RM_CHIMERAS=0
 
 // Database for chimera detection
 CHIMERA_DB="/srv/db/gold/micrombiomeutils_r20110519_GOLD.fna"
@@ -46,6 +46,9 @@ REMOVE_OTUS="Eukaryota"
 // Rarefaction depth (number of reads per sample)
 RAREFACTION_DEPTH=1000
 
+// Taxonomic level at which to summarize (e.g. 6 for Greengenes genus level)
+TAXO_LVL=6
+
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -59,7 +62,7 @@ uparse_otu = segment {
    dereplicate +
    rm_singletons.using(skip:SKIP_RM_SINGLETONS) +
    otu_clustering.using(perc:OTU_MIN_IDENTITY) +
-   rm_chimeras.using(db:CHIMERA_DB)
+   rm_chimeras.using(db:CHIMERA_DB,skip:SKIP_RM_CHIMERAS)
 }
 
 
@@ -81,31 +84,15 @@ add_taxonomy = segment {
 }
 
 
-//
-// Remove samples
-//
-// Merge samples
-//
-// Remove euks
-//
-//  ... rarefaction + copyrighter ...
-//
-// Genus-level summary
-//
-// Heatmap
-//
-// Alpha diversity
-//
-// Beta diversity
-//
-
-
 Bpipe.run {
    uparse_otu +
    otu_mapping.using(perc:OTU_MIN_IDENTITY) +
    [make_otu_table, assign_taxo_global] +
    add_taxonomy +
+   //// TODO: remove_samples + merge_samples + remove_euks
    rarefy.using(num:RAREFACTION_DEPTH) +
    copyrighter.using(db:GCN_DB) +
+   tax_summary.using(lvl:TAXO_LVL) +
+   //// TODO: heatmap
    final_report
 }

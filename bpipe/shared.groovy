@@ -462,21 +462,22 @@ dereplicate = {
 rm_chimeras = {
    doc title: "Chimera filtering using a reference database",
        desc:  """Parameters:
-                    'db', FASTA file of high-quality, chimera-free sequences""",
+                    'db', FASTA file of high-quality, chimera-free sequences,
+                    'skip', boolean to skip this step (default: 0)""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   if (EXCLUDE_CHIMERAS == 1) {
+   if (skip == 1) {
+      exec """
+         echo "Skipping chimera removal..." &&
+         cp $input.otus $output.otus
+      """
+   } else {
       // http://www.drive5.com/usearch/manual/uchime_ref.html
       // usearch -uchime_ref otus1.fa -db $d/gold.fa -strand plus -nonchimeras otus2.fa
       exec """
          echo "Removing chimeras!" &&
          module load usearch/7.0.1001 &&   
          usearch -uchime_ref $input.otus -db $db -threads $threads -strand plus -nonchimeras $output.otus
-      """
-   } else {
-      exec """
-         echo "Not removing chimeras..." &&
-         cp $input.otus $output.otus
       """
    }
 }
@@ -580,4 +581,5 @@ copyrighter = {
       """
    }
 }
+
 
