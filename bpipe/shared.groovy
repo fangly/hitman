@@ -507,6 +507,7 @@ otu_mapping = {
 }
 
 
+@Transform("blast")
 usearch_global = {
    doc title: "Assign taxonomy using USEARCH global alignments",
        desc:  """Parameters:
@@ -516,7 +517,7 @@ usearch_global = {
    def id = perc / 100
    exec """
       module load usearch/7.0.1001 &&
-      usearch -usearch_global $input.otus -db $input.fna -id $id -threads $threads -strand plus -blast6out $output.blast
+      usearch -usearch_global $input.otus -db $input.fna -id $id -threads $threads -strand plus -blast6out $output
    """
    // -maxhits (default 0; i.e. ignored)
    //    This indicates the maximum number of hits written to the output files.
@@ -556,4 +557,5 @@ extract_amplicons = {
       ln -s -f \$TRIMMED_TAXO_DB $output.fna
    """
 }
+
 
