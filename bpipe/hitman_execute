@@ -4,7 +4,8 @@
 
 // Input is:
 // 1/ *.fna: FASTA reads, clean, trimmed to the same length, and named by sample
-// 2/ *.fna: FASTA file of primers used (called 'fwd' and 'rev')
+// 2/ *.fna: FASTA file containing the two primers used (the first primer should
+//           be the one from which sequencing is started)
 
 // Usage example: bpipe run pipeline_analyze.groovy sediments_QA.fna fwd_primer.fna
 

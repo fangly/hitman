@@ -532,7 +532,7 @@ usearch_global = {
 
 extract_amplicons = {
    doc title: "Given primers, extract amplicons from a file of sequences, trim them and save the results globally",
-       desc:  """Parameters:
+       desc:  """The first primer should be the primer from which sequencing starts. Parameters:
                     'db', file of database sequences""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
@@ -540,9 +540,9 @@ extract_amplicons = {
       module load bioperl &&
       TRIM_LEN=`extract_first_seqs --input $input.fna --number 1 | get_seq_length | cut -f 2` &&
       echo "Trim length: \$TRIM_LEN" &&
-      FWD_PRIMER=`extract_seqs_by_name --input $input2.fna --string fwd | convert_seq_format --format raw` &&
+      FWD_PRIMER=`extract_first_seqs --input $input2.fna --number 1 | convert_seq_format --format raw` &&
       echo "Fwd primer: \$FWD_PRIMER" &&
-      REV_PRIMER=`extract_seqs_by_name --input $input2.fna --string rev | convert_seq_format --format raw` &&
+      REV_PRIMER=`extract_last_seqs --input $input2.fna --number 1 | convert_seq_format --format raw` &&
       echo "Rev primer: \$REV_PRIMER" &&
       TAXO_DB=$db &&
       TRIMMED_TAXO_DB=\${TAXO_DB%.*}_trimmed_\${FWD_PRIMER}_\${TRIM_LEN}_bp.fna &&
