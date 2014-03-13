@@ -10,9 +10,6 @@
 
 // Options:
 
-// Number of threads
-NOF_THREADS=12
-
 // Flag to prevent singleton sequences to constitute an OTU
 SKIP_RM_SINGLETONS=0
 
@@ -68,7 +65,7 @@ dereplicate = {
    exec """
       module load usearch/7.0.1001 &&
       TEMP_FILE=`mktemp tmp_dereplicate_XXXXXXXX.otus` &&
-      usearch -derep_fulllength $input.fna -output \$TEMP_FILE -sizeout -threads $NOF_THREADS &&
+      usearch -derep_fulllength $input.fna -output \$TEMP_FILE -sizeout -threads $threads &&
       usearch -sortbysize \$TEMP_FILE -output $output.otus &&
       rm \$TEMP_FILE
    """
@@ -88,7 +85,7 @@ rm_chimeras = {
       exec """
          echo "Removing chimeras!" &&
          module load usearch/7.0.1001 &&   
-         usearch -uchime_ref $input.otus -db $db -threads $NOF_THREADS -strand plus -nonchimeras $output.otus
+         usearch -uchime_ref $input.otus -db $db -threads $threads -strand plus -nonchimeras $output.otus
       """
    } else {
       exec """
@@ -116,7 +113,7 @@ otu_mapping = {
       module load usearch/7.0.1001 &&
       TEMP_FILE=`mktemp tmp_otu_mapping_XXXXXXXX.fna` &&
       perl -p -e 's/^>(\\S+)_(\\S+)/>\$2;barcodelabel=\$1;/' $input.fna > \$TEMP_FILE &&
-      usearch -usearch_global \$TEMP_FILE -db $input.otus -strand plus -id $id -threads $NOF_THREADS -uc $output.uc &&
+      usearch -usearch_global \$TEMP_FILE -db $input.otus -strand plus -id $id -threads $threads -uc $output.uc &&
       rm \$TEMP_FILE &&
       NO_MATCH=`grep -c "^N" $output.uc` &&
       echo "Number of non-matching reads: \$NO_MATCH"
@@ -161,7 +158,7 @@ usearch_global = {
    def id = perc / 100
    exec """
       module load usearch/7.0.1001 &&
-      usearch -usearch_global $input.otus -db $input.fna -id $id -threads $NOF_THREADS -strand plus -blast6out $output.blast
+      usearch -usearch_global $input.otus -db $input.fna -id $id -threads $threads -strand plus -blast6out $output.blast
    """
    // -maxhits (default 0; i.e. ignored)
    //    This indicates the maximum number of hits written to the output files.

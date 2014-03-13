@@ -17,6 +17,14 @@ add, e.g. "-p SKIP_DENOISING=1 -p TRIM_LEN=250"
    repeatable
    param.type: string
 
+=item -n <num_threads> | --num_threads <num_threads>
+
+Specify the number of threads to use. Default: num_threads.default
+
+=for Euclid:
+   num_threads.type: +int
+   num_threads.default: 12
+
 =item -r | --report
 
 Generate an HTML report.
@@ -127,6 +135,7 @@ sub run_hitman {
    my @cmd = (
       'bpipe', 'run',
       @params,
+      '-n', $ARGV{'--num_threads'},
       exists $ARGV{'--report'} ? '-r' : (),
       '-d', $ARGV{'--dir'},
       groovy_script(),
