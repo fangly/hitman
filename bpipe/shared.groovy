@@ -435,3 +435,125 @@ rarefy = {
    """
 }
 
+
+
+@Transform("otus")
+dereplicate = {
+   doc title: "Collapse duplicate reads, record their abundance and sort them by abundance",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   // http://drive5.com/usearch/manual/derep_fulllength.html
+   // http://drive5.com/usearch/manual/sortbysize.html
+   // usearch -derep_fulllength filtered.fasta -output derep.fasta -sizeout
+   // usearch -sortbysize derep.fasta -output derep2.fasta
+   exec """
+      module load usearch/7.0.1001 &&
+      TEMP_FILE=`mktemp tmp_dereplicate_XXXXXXXX.otus` &&
+      usearch -derep_fulllength $input.fna -output \$TEMP_FILE -sizeout -threads $threads &&
+      usearch -sortbysize \$TEMP_FILE -output $output.otus &&
+      rm \$TEMP_FILE
+   """
+}
+
+
+@Filter("rm_chimeras")
+rm_chimeras = {
+   doc title: "Chimera filtering using a reference database",
+       desc:  """Parameters:
+                    'db', FASTA file of high-quality, chimera-free sequences""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   if (EXCLUDE_CHIMERAS == 1) {
+      // http://www.drive5.com/usearch/manual/uchime_ref.html
+      // usearch -uchime_ref otus1.fa -db $d/gold.fa -strand plus -nonchimeras otus2.fa
+      exec """
+         echo "Removing chimeras!" &&
+         module load usearch/7.0.1001 &&   
+         usearch -uchime_ref $input.otus -db $db -threads $threads -strand plus -nonchimeras $output.otus
+      """
+   } else {
+      exec """
+         echo "Not removing chimeras..." &&
+         cp $input.otus $output.otus
+      """
+   }
+}
+
+
+@Transform("uc")
+otu_mapping = {
+   doc title: "Map each reads to an OTU (if possible)",
+       desc:  """Parameters:
+                    'perc', the minimum identity % required (e.g. 97%)""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   // The uc2otutab.py script expects reads headers with a tag called barcodelabel=
+   // http://drive5.com/usearch/manual/usearch_global.html
+   // usearch -usearch_global reads.fa -db otus.fa -strand plus -id 0.97 -uc readmap.uc
+   // find how many reads did not match (lines that start with an N, i.e. no-hit records)
+   // grep -c "^N" readmap.uc
+   def id = perc / 100
+   exec """
+      module load usearch/7.0.1001 &&
+      TEMP_FILE=`mktemp tmp_otu_mapping_XXXXXXXX.fna` &&
+      perl -p -e 's/^>(\\S+)_(\\S+)/>\$2;barcodelabel=\$1;/' $input.fna > \$TEMP_FILE &&
+      usearch -usearch_global \$TEMP_FILE -db $input.otus -strand plus -id $id -threads $threads -uc $output.uc &&
+      rm \$TEMP_FILE &&
+      NO_MATCH=`grep -c "^N" $output.uc` &&
+      echo "Number of non-matching reads: \$NO_MATCH"
+   """
+}
+
+
+usearch_global = {
+   doc title: "Assign taxonomy using USEARCH global alignments",
+       desc:  """Parameters:
+                    'perc', the minimum identity % required (e.g. 97%)""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   def id = perc / 100
+   exec """
+      module load usearch/7.0.1001 &&
+      usearch -usearch_global $input.otus -db $input.fna -id $id -threads $threads -strand plus -blast6out $output.blast
+   """
+   // -maxhits (default 0; i.e. ignored)
+   //    This indicates the maximum number of hits written to the output files.
+   //    This is not a termination condition; the search continues after the
+   //    maximum number of hits is exceeded. When the search terminates, hits
+   //    are sorted by decreasing identity or increasing E-value and up to
+   //    maxhits are written. Default is 0, meaning that the option is ignored.
+   // ‑maxaccepts (default 1) & -maxrejects (default 32)
+   //    These options stop the search for a given query sequence if a given
+   //    number of accepts or rejects have occurred
+}
+
+
+extract_amplicons = {
+   doc title: "Given primers, extract amplicons from a file of sequences, trim them and save the results globally",
+       desc:  """Parameters:
+                    'db', file of database sequences""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bioperl &&
+      TRIM_LEN=`extract_first_seqs --input $input.fna --number 1 | get_seq_length | cut -f 2` &&
+      echo "Trim length: \$TRIM_LEN" &&
+      FWD_PRIMER=`extract_seqs_by_name --input $input2.fna --string fwd | convert_seq_format --format raw` &&
+      echo "Fwd primer: \$FWD_PRIMER" &&
+      REV_PRIMER=`extract_seqs_by_name --input $input2.fna --string rev | convert_seq_format --format raw` &&
+      echo "Rev primer: \$REV_PRIMER" &&
+      TAXO_DB=$db &&
+      TRIMMED_TAXO_DB=\${TAXO_DB%.*}_trimmed_\${FWD_PRIMER}_\${TRIM_LEN}_bp.fna &&
+      if [ ! -e \$TRIMMED_TAXO_DB ]; then
+         echo "Trimming reference sequences in \$TRIMMED_TAXO_DB" &&
+         module load emboss &&
+         extract_amplicons -i $TAXO_DB -f \$FWD_PRIMER -r \$REV_PRIMER -t \$TRIM_LEN -e 1 -o \$TRIMMED_TAXO_DB;
+      else
+         echo "Re-using trimmed reference sequences in \$TRIMMED_TAXO_DB";
+      fi &&
+      ln -s -f \$TRIMMED_TAXO_DB $output.fna
+   """
+}
+
