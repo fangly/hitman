@@ -17,6 +17,10 @@ add. Example: "-p DENOISE=1 -p TRIM_LEN=250"
    repeatable
    param.type: string
 
+=item -r | --report
+
+Generate an HTML report.
+
 =item -d <dir> | --dir <dir>
 
 Specify the folder where to put the results. This folder will be created if
@@ -120,7 +124,14 @@ sub run_hitman {
 
    # Prepare Bpipe command, e.g.:
    #   bpipe run -p QUAL_TRUNC=13 -d out_dir pipeline.groovy infile1 infile2
-   my @cmd = ('bpipe', 'run', @params, '-d', $ARGV{'--dir'}, groovy_script(), @$inputs);
+   my @cmd = (
+      'bpipe', 'run',
+      @params,
+      exists $ARGV{'--report'} ? '-r' : (),
+      '-d', $ARGV{'--dir'},
+      groovy_script(),
+      @$inputs
+   );
 
    # Run Bpipe
    runx( @cmd );
