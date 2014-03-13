@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
-// Clean and trim amplicon reads
+// Clean and trim amplicon reads seqeunced on Illumina MiSeq (2x 300bp)
 // Input FASTQ reads must have Sanger quality scores and be labelled by sample.
 // Note: the code for calculating sequence statistics assumes that the sequences
 // are NOT wrapped.
@@ -37,11 +37,13 @@ TRIM_LEN=250
 //////////
 
 
-about title: "hitman_deploy - Amplicon quality assurance" 
+about title: "hitman_deploy_miseq - Quality assurance for Illumina MiSeq amplicons"
 
 
 Bpipe.run {
    fastq_stats.using(stage:'initial') +
+   merge_read_pairs() + ///// IMPLEMENT ME
+   fastq_stats.using(stage:'merge') +
    rm_small_fastq.using(length:TRIM_LEN-10) +
    fastq_stats.using(stage:'discard') +
    qual_trim_fastq.using(qual:TRIM_QUAL) +
@@ -52,8 +54,6 @@ Bpipe.run {
    fastq_stats.using(stage:'trim') +
    ee_filter.using(ee:TRIM_LEN*EE_PERC/100) +
    fastq_stats.using(stage:'eefilt') +
-   acacia.using(skip:SKIP_DENOISING) +
-   fasta_stats.using(stage:'acacia') +
    rm_small_fasta.using(length:TRIM_LEN) +
    fasta_stats.using(stage:'fdiscrd') +
    trim_fasta.using(length:TRIM_LEN) +
