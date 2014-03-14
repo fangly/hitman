@@ -1,3 +1,6 @@
+// Shared modules for Bpipe
+
+
 @Transform("mcf")
 qmapping2mcf = {
    doc title: "Create a 454 MID mapping file from a QIIME mapping file",
@@ -9,6 +12,19 @@ qmapping2mcf = {
       echo -e "custom_MIDs\n{" > $output.mcf &&
       cut -f 1,2 $input.qmapping | grep -v ^# | perl -p -e 's/^(.+)\t(.+)\$/mid = "\$1", "\$2", 2;/;' >> $output.mcf &&
       echo -e "}\n" >> $output.mcf
+   """
+}
+
+
+@Transform("tmapping")
+qmapping2tmapping = {
+   doc title: "Create a tabular mapping file (2 columns) from a QIIME mapping file",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      cut -f 1-2 $input.qmapping > $output.tmapping
    """
 }
 
@@ -29,21 +45,31 @@ split_sff_libraries = {
 
 
 split_fastq_libraries = {
-   doc title: "Use MIDs in a FASTX mapping file to separate FASTQ records belonging to different samples using fastx_barcode_splitter",
+   doc title: "Use MIDs in a tabular mapping file to separate FASTQ records belonging to different samples using fastx_barcode_splitter",
        desc:  """Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   produce("${input.prefix}*.fastq") {
+   //http://code.google.com/p/ea-utils/wiki/FastqMultx
+   produce("${input.prefix}.*.fastq") {
       exec """
-         module load fastx_toolkit &&
-         cat $input.fastq | fastx_barcode_splitter.pl --bcfile $input.fmapping --prefix $input.prefix --bol --mismatches 0
+         module load ea_utils &&
+         fastq-multx -B $input.tmapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0
       """
    }
-   //http://hannonlab.cshl.edu/fastx_toolkit/commandline.html#fastx_barcode_splitter_usage
-   // Alternatively, use:
-   //    barcode_splitter.py, https://gist.github.com/dgrtwo/3725741
-   //    spltBC, http://code.google.com/p/ngopt/source/browse/trunk/tools/splitbc
+   // Alternatives:
+   // - QIIME split_libraries_fastq.py, but does a bunch of extra stuff that's not needed
+   //   https://github.com/qiime/qiime/blob/master/scripts/split_libraries_fastq.py
+   // - FASTX_toolkit fastx_barcode_splitter, but does not support different MID lengths.
+   //   http://hannonlab.cshl.edu/fastx_toolkit/commandline.html#fastx_barcode_splitter_usage
+   // - NGOpt splitBC, but does not support different MID lengths
+   //   http://code.google.com/p/ngopt/source/browse/trunk/tools/splitbc
+   // - barcode_splitter.py, but needs a weird "index" file
+   //   https://gist.github.com/dgrtwo/3725741
+   // - ngsutils barcode_split.py
+   //   https://github.com/ngsutils/ngsutils/blob/master/ngsutils/fastq/barcode_split.py
+   // - sabre
+   //   https://github.com/najoshi/sabre
 }
 
 
@@ -90,7 +116,7 @@ rename_seqs = {
    // In comparison, QIIME would call it "3833_1"
    // Note: rely on the sequences not being wrapped
    exec """
-      PREFIX=`echo $input.fastq | perl -n -e 'print((split /\\./)[-2])'` &&
+      PREFIX=`basename $input.fastq | perl -n -e 'print((split /\\./)[-2])'` &&
       cat $input.fastq | paste - - | perl -p -e "s/^@/\\@\${PREFIX}_/; s/^\\+\\S*/+/" | tr '\\t' '\\n' > $output.fastq
    """
    // Alternatively, use FQTRIM or `usearch -fastq_filter seqs.fq ‑fastqout seqs_new.fq -relabel sample_`

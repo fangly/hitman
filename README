@@ -24,6 +24,7 @@ Dependencies:
    sff2fastq
    pandaseq
    fastx_toolkit
+   ea-utils
    acacia
    usearch v7
    emboss
