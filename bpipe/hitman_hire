@@ -5,25 +5,27 @@
 // Usage example:
 //    bpipe run hitman_hire G67.sff G67.qmapping G72.sff G72.qmapping
 
-// Typical input for different sequencing platforms is:
-//   * Roche-454 : SFF file and mapping file
-//   * IonTorrent:
-//   * Illumina  : 
-
 ////////////////////////////////////////////////////////////////////////////////
 
 
 about title: "hitman_hire - Prepare amplicons for analysis" 
 
 
+//Bpipe.run {
+//   "%.*" * [
+//      qmapping2mcf + split_sff_libraries + "%.sff" * [ sff2fastq + rename_seqs ]
+//   ] + cat_files + final_report
+//}
+
+
 Bpipe.run {
    "%.*" * [
-      qmapping2mcf + split_sff_libraries + "%.sff" * [ sff2fastq + rename_seqs ]
+      qmapping2tmapping + sff2fastq + split_fastq_libraries + "%.fastq" * [ rename_seqs ]
    ] + cat_files + final_report
 }
 
-// if input is SFF  :             qmapping2mcf      + split_sff_libraries   + "%.sff"   * [ sff2fastq + rename_seqs ]
-// alternatively    : sff2fastq + qmapping2fmapping + split_fastq_libraries + "%.fastq" * [             rename_seqs ]
-// if input is FASTQ:             qmapping2fmapping + split_fastq_libraries + "%.fastq" * [             rename_seqs ]
-// even better if we start with fmapping files...
-// then we can add a read pairing step...
+
+// now, for SFF         :    qmapping2tmapping +  sff2fastq  +                 split_fastq_libraries + "%.fastq" * [ rename_seqs ]
+// but if input is FASTQ:    qmapping2tmapping + [sff2fastq] +                 split_fastq_libraries + "%.fastq" * [ rename_seqs ]
+// then add read pairing:    qmapping2tmapping + [sff2fastq] + [merge_pairs] + split_fastq_libraries + "%.fastq" * [ rename_seqs ]
+// in the future, it's even better if user input can be tmapping files...
