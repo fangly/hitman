@@ -41,6 +41,9 @@ split_fastq_libraries = {
       """
    }
    //http://hannonlab.cshl.edu/fastx_toolkit/commandline.html#fastx_barcode_splitter_usage
+   // Alternatively, use:
+   //    barcode_splitter.py, https://gist.github.com/dgrtwo/3725741
+   //    spltBC, http://code.google.com/p/ngopt/source/browse/trunk/tools/splitbc
 }
 
 
