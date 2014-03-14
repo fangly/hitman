@@ -1,9 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 
-// Given SFF and corresponding QIIME mapping files, extract the sequences from
-// the desired samples and put them in a single FASTQ file.
+// Given SFF (or FASTQ) files and corresponding QIIME mapping files, extract the
+// sequences from the desired samples and put them in a single FASTQ file.
 // Usage example:
-//    bpipe run hitman_hire Gask67.sff Gask67.mapping Gask76.sff Gask76.mapping
+//    bpipe run hitman_hire G67.sff G67.qmapping G72.sff G72.qmapping
+
+// Typical input for different sequencing platforms is:
+//   * Roche-454 : SFF file and mapping file
+//   * IonTorrent:
+//   * Illumina  : 
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -12,6 +17,12 @@ about title: "hitman_hire - Prepare amplicons for analysis"
 
 
 Bpipe.run {
-   "%.*" * [ mapping2mcf + split_sff_libraries +
-             "%.sff" * [ sff2fastq + rename_seqs ] ] + cat_files + final_report
+   "%.*" * [
+      qmapping2mcf + split_sff_libraries + "%.sff" * [ sff2fastq + rename_seqs ]
+   ] + cat_files + final_report
 }
+
+// if input is SFF  :             qmapping2mcf      + split_sff_libraries   + "%.sff"   * [ sff2fastq + rename_seqs ]
+// alternatively    : sff2fastq + qmapping2fmapping + split_fastq_libraries + "%.fastq" * [             rename_seqs ]
+// if input is FASTQ:             qmapping2fmapping + split_fastq_libraries + "%.fastq" * [             rename_seqs ]
+// even better if we start with fmapping files...

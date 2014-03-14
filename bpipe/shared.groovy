@@ -1,20 +1,20 @@
 @Transform("mcf")
-mapping2mcf = {
-   doc title: "Create a 454 MID config file from a QIIME mapping file",
+qmapping2mcf = {
+   doc title: "Create a 454 MID mapping file from a QIIME mapping file",
        desc:  """Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       echo -e "custom_MIDs\n{" > $output.mcf &&
-      cut -f 1,2 $input.mapping | grep -v ^# | perl -p -e 's/^(.+)\t(.+)\$/mid = "\$1", "\$2", 2;/;' >> $output.mcf &&
+      cut -f 1,2 $input.qmapping | grep -v ^# | perl -p -e 's/^(.+)\t(.+)\$/mid = "\$1", "\$2", 2;/;' >> $output.mcf &&
       echo -e "}\n" >> $output.mcf
    """
 }
 
 
 split_sff_libraries = {
-   doc title: "Use MIDs to separate SFF records belonging to different samples",
+   doc title: "Use MIDs in a MCF mapping file to separate SFF records belonging to different samples using sfffile",
        desc:  """Parameters:
                     none""",
        constraints: "",
@@ -25,6 +25,22 @@ split_sff_libraries = {
          sfffile -s custom_MIDs -mcf $input.mcf -o $input.prefix $input.sff
       """
    }
+}
+
+
+split_fastq_libraries = {
+   doc title: "Use MIDs in a FASTX mapping file to separate FASTQ records belonging to different samples using fastx_barcode_splitter",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   produce("${input.prefix}*.fastq") {
+      exec """
+         module load fastx_toolkit &&
+         cat $input.fastq | fastx_barcode_splitter.pl --bcfile $input.fmapping --prefix $input.prefix --bol --mismatches 0
+      """
+   }
+   //http://hannonlab.cshl.edu/fastx_toolkit/commandline.html#fastx_barcode_splitter_usage
 }
 
 
@@ -39,6 +55,23 @@ sff2fastq = {
       module load sff2fastq &&
       sff2fastq -o $output.fastq $input.sff
    """
+}
+
+
+@Filter("merge_paired_reads")
+merge_read_pairs = {
+   doc title: "Merge pairs of FASTQ reads that overlap using Pandaseq (& keep ambiguities)",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   //pandaseq -f $FWD -r $REV -T $THREADS -F -w $OUT_MERGED -u $OUT_SINGLES
+   //exec """
+   //   module load pandaseq &&
+   //   ////TODO: pandaseq -f $FWD -r $REV -T $threads -F -w $output -u $OUT_SINGLES
+   //"""
+   // Alternatively, USEARCH can perform paired read merging:i
+   // http://www.drive5.com/usearch/manual/fastq_mergepairs.html:w
 }
 
 

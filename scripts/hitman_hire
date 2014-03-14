@@ -10,15 +10,15 @@ prepares them for analysis and produces a FASTQ file.
 
 =over
 
-=item -i <sff> <mapping> | --in_files <sff> <mapping>
+=item -i <sff> <qmapping> | --in_files <sff> <qmapping>
 
-Input SFF and mapping files. The files must have *.sff and *.mapping extensions,
-respectively. Repeat this argument as many times as needed. 
+Input SFF and QIIME mapping files. The files must have *.sff and *.qmapping
+extensions, respectively. Repeat this argument as many times as needed.
 
 =for Euclid:
    repeatable
    sff.type: readable
-   mapping.type: readable
+   qmapping.type: readable
 
 =back
 
@@ -32,7 +32,7 @@ use lib "$RealBin/../lib";
 use Hitman;
 
 Hitman::parse_args();
-my $inputs = [ map { $_->{'sff'}, $_->{'mapping'} } @{$ARGV{'--in_files'}} ];
+my $inputs = [ map { $_->{'sff'}, $_->{'qmapping'} } @{$ARGV{'--in_files'}} ];
 Hitman::run_hitman( $inputs );
 
 exit;
