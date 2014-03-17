@@ -10,13 +10,13 @@ the input cleaned and trimmed FASTA sequences to produce a BIOM file.
 
 =over
 
-=item -s <seqs> | --seqs <seqs>
+=item -i <seqs> | --input <seqs>
 
 Input FASTA file containing the cleaned, trimmed sequences from the previous
 hitman_deploy step. The file must have a *.fna extension.
 
 =for Euclid:
-   seqs.type: readable
+   input.type: readable
 
 =item -q <primers> | --primers <primers>
 
@@ -40,7 +40,7 @@ use lib "$RealBin/../lib";
 use Hitman;
 
 Hitman::parse_args();
-my $inputs = [ $ARGV{'--seqs'}, $ARGV{'--primers'} ];
+my $inputs = [ $ARGV{'--input'}, $ARGV{'--primers'} ];
 Hitman::run_hitman( $inputs );
 
 exit;

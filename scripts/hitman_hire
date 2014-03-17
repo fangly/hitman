@@ -3,24 +3,32 @@
 
 =head1 DESCRIPTION
 
-hitman_hire gathers sequences of the desired samples from SFF (or FASTQ) files
-accompanied by their mapping files, prepares them for analysis and produces a
-FASTQ file.
+hitman_hire gathers the raw amplicon reads of the desired samples from SFF (or
+FASTQ) files accompanied by their mapping files, prepares them for analysis and
+produces a FASTQ file suitable for hitman_deploy.
 
 =head1 MANDATORY ARGUMENTS
 
 =over
 
-=item -i <seqs> <tmapping> | --in_files <seqs> <tmapping>
+=item -i <seqs>... | --input <seqs>...
 
-Input SFF (or FASTQ) and 2-column tabular mapping files. The files must have the
-*.sff (or *.fastq) and *.tmapping extension, respectively. Repeat this argument
-as many times as needed.
+Input SFF (or FASTQ) files containing the raw amplicon reads. The files must
+have the *.sff (or *.fastq) extension.
 
 =for Euclid:
-   repeatable
    seqs.type: readable
-   tmapping.type: readable
+
+=item -m <mapping>... | --mapping <mapping>...
+
+Input mapping files indicating the multiplex identifier (MID) sequence used for
+each sample. The files should have the *.tmapping extension and be in 2-column
+tabular format (columns sample ID and MID). When using several mapping files,
+make sure that they have the same basename as the corresponding sequence file
+given to --input, e.g. "Run67.tmapping" for sequences given in "Run67.sff".
+
+=for Euclid:
+   mapping.type: readable
 
 =back
 
@@ -29,13 +37,38 @@ as many times as needed.
 
 use strict;
 use warnings;
+use File::Basename;
 use FindBin qw($RealBin);
 use lib "$RealBin/../lib";
 use Hitman;
 
 Hitman::parse_args();
-my $inputs = [ map { $_->{'seqs'}, $_->{'tmapping'} } @{$ARGV{'--in_files'}} ];
+validate_input();
+my $inputs = [ @{$ARGV{'--input'}},
+               exists $ARGV{'--mapping'} ? @{$ARGV{'--mapping'}} : () ];
 Hitman::run_hitman( $inputs );
 
 exit;
 
+
+sub validate_input {
+   my $re = qr/\.[^.]*/;
+   my $num_files = scalar @{$ARGV{'--input'}};
+   my @file_types = ('mapping');
+   for my $type (@file_types) {
+      my $val = $ARGV{'--'.$type};
+      next if not defined $val;
+      if (scalar @$val != $num_files ) {
+         die "Error: The number of $type files did not match the number of ".
+            "sequence files\n";
+      }
+      for my $i (0 .. $num_files-1) {
+         my $f1 = $ARGV{'--input'}->[$i];
+         my $f2 = $val->[$i];
+         if (not fileparse($f1, $re) eq fileparse($f2, $re)) {
+            die "Error: Name of file '$f2' did not match that of file '$f1'\n";
+         }
+      }
+   }
+   return 1;
+}

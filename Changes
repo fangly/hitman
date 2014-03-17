@@ -3,6 +3,8 @@ Changelog for Hitman
 x.x xxxx-xx-xx
  - Now using 2-columnm tabular format instead of QIIME for input mapping files
  - Input can now be SFF or FASTQ files
+ - Argument --input is now used for all scripts to provide sequences
+ - hitman_hire now has a --mapping argument separate from --input
 
 0.1 2014-03-13
  - Initial version
