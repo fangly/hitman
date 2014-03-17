@@ -405,9 +405,9 @@ rm_singletons = {
    if (skip == 1) {
       exec """
          NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
-         echo "Not removing \$NOF_SINGLETONS singletons..." &&
-         ln -f -s $input.otus $output.otus
+         echo "Not removing \$NOF_SINGLETONS singletons..."
       """
+      forward input
    } else {
       // http://drive5.com/usearch/manual/sortbysize.html
       // usearch -sortbysize derep.fasta -output derep2.fasta -minsize 2
@@ -558,9 +558,9 @@ rm_chimeras = {
        author: "Florent Angly (florent.angly@gmail.com)"
    if (skip == 1) {
       exec """
-         echo "Skipping chimera removal..." &&
-         ln -f -s $input.otus $output.otus
+         echo "Skipping chimera removal..."
       """
+      forward input
    } else {
       // http://www.drive5.com/usearch/manual/uchime_ref.html
       // usearch -uchime_ref otus1.fa -db $d/gold.fa -strand plus -nonchimeras otus2.fa
