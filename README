@@ -5,10 +5,11 @@ values make it suitable for bacterial and archaeal profiling in 454 and Illumina
 datasets.
 
 Three types of input files are necessary:
-1/ SFF or FASTQ files containing the amplicon reads
-2/ Mapping file indicating the multiplex identifiers (MIDs) used for each sample
+1/ SFF (or FASTQ) files containing the amplicon reads.
+2/ 2-column tabular mapping files indicating the multiplex identifiers (MIDs)
+   used for each sample.
 3/ FASTA file containing the primers used. The primer from which sequencing
-    proceeds must be first in the file.
+   proceeds must be first in the file.
 
 The pipeline itself comprises three steps:
 1/ hitman_hire: Collect sequences to analyze from SFF files.
