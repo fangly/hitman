@@ -74,7 +74,7 @@ split_sff_libraries = {
 
 
 split_fastq_libraries = {
-   doc title: "Use MIDs in a tabular mapping file to separate FASTQ records belonging to different samples using fastx_barcode_splitter",
+   doc title: "Use MIDs in a tabular mapping file to separate FASTQ records belonging to different samples using fastq-multx",
        desc:  """Parameters:
                     none""",
        constraints: "",
@@ -83,7 +83,8 @@ split_fastq_libraries = {
    produce("${input.prefix}.*.fastq") {
       exec """
          module load ea_utils &&
-         fastq-multx -B $input.tmapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0
+         fastq-multx -B $input.tmapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0 &&
+         rm ${input.prefix}.unmatched.fastq
       """
    }
    // Alternatives:
