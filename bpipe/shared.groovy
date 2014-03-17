@@ -73,17 +73,45 @@ split_fastq_libraries = {
 }
 
 
-@Transform("fastq")
 sff2fastq = {
    doc title: "Convert an SFF file to FASTQ",
-       desc:  """Parameters:
+       desc:  """Do nothing if input is already FASTQ. Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load sff2fastq &&
-      sff2fastq -o $output.fastq $input.sff
-   """
+   def fmt = null
+   for ( file in inputs ) {
+      def ext = (file =~ /\.([^\.]*)$/)[0][1]
+      if (ext == "fastq") {
+         fmt = ext
+      } else if (ext == "sff") {
+         fmt = ext
+         break
+      }
+   }
+   if (fmt == "sff") {
+      transform("fastq") {
+         exec """
+            echo "Converting SFF to FASTQ" &&
+            module load sff2fastq &&
+            sff2fastq -o $output.fastq $input.sff
+         """
+      }
+   } else if (fmt == "fastq") {
+      exec """
+         echo "Skipping conversion from SFF to FASTQ..." &&
+         cp $input.fastq $output.fastq
+      """
+      // TODO: When bug #90 is fixed, replace by: forward input
+      // See code.google.com/p/bpipe/issues/detail?id=90
+   } else {
+      exec """
+         echo "No SFF or FASTQ files provided" &&
+         exit 1
+      """
+      // TODO: When Bpipe 0.9.8.6_beta_2+ is released, replace by:
+      // fail "No SFF or FASTQ files were provided"
+   }
 }
 
 
@@ -378,7 +406,7 @@ rm_singletons = {
       exec """
          NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
          echo "Not removing \$NOF_SINGLETONS singletons..." &&
-         ln -s $input.otus $output.otus
+         ln -f -s $input.otus $output.otus
       """
    } else {
       // http://drive5.com/usearch/manual/sortbysize.html
@@ -531,7 +559,7 @@ rm_chimeras = {
    if (skip == 1) {
       exec """
          echo "Skipping chimera removal..." &&
-         ln -s $input.otus $output.otus
+         ln -f -s $input.otus $output.otus
       """
    } else {
       // http://www.drive5.com/usearch/manual/uchime_ref.html
@@ -617,7 +645,7 @@ extract_amplicons = {
       else
          echo "Re-using trimmed reference sequences in \$TRIMMED_TAXO_DB";
       fi &&
-      ln -s -f \$TRIMMED_TAXO_DB $output.fna
+      ln -f -s \$TRIMMED_TAXO_DB $output.fna
    """
 }
 

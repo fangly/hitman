@@ -3,22 +3,23 @@
 
 =head1 DESCRIPTION
 
-hitman_hire gathers sequences of the desired samples from SFF and mapping files,
-prepares them for analysis and produces a FASTQ file.
+hitman_hire gathers sequences of the desired samples from SFF (or FASTQ) files
+accompanied by their mapping files, prepares them for analysis and produces a
+FASTQ file.
 
 =head1 MANDATORY ARGUMENTS
 
 =over
 
-=item -i <sff> <tmapping> | --in_files <sff> <tmapping>
+=item -i <seqs> <tmapping> | --in_files <seqs> <tmapping>
 
-Input SFF and 2-column tabular mapping files. The files must have *.sff and
-*.tmapping extensions, respectively. Repeat this argument as many times as
-needed.
+Input SFF (or FASTQ) and 2-column tabular mapping files. The files must have the
+*.sff (or *.fastq) and *.tmapping extension, respectively. Repeat this argument
+as many times as needed.
 
 =for Euclid:
    repeatable
-   sff.type: readable
+   seqs.type: readable
    tmapping.type: readable
 
 =back
@@ -33,7 +34,7 @@ use lib "$RealBin/../lib";
 use Hitman;
 
 Hitman::parse_args();
-my $inputs = [ map { $_->{'sff'}, $_->{'tmapping'} } @{$ARGV{'--in_files'}} ];
+my $inputs = [ map { $_->{'seqs'}, $_->{'tmapping'} } @{$ARGV{'--in_files'}} ];
 Hitman::run_hitman( $inputs );
 
 exit;
