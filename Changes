@@ -1,7 +1,7 @@
 Changelog for Hitman
 
 x.x xxxx-xx-xx
- - 
+ - Now using 2-columnm tabular format instead of QIIME for input mapping files
 
 0.1 2014-03-13
  - Initial version

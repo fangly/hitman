@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
-// Given SFF (or FASTQ) files and corresponding QIIME mapping files, extract the
+// Given SFF (or FASTQ) files and corresponding tabular mapping files, extract the
 // sequences from the desired samples and put them in a single FASTQ file.
 // Usage example:
-//    bpipe run hitman_hire G67.sff G67.qmapping G72.sff G72.qmapping
+//    bpipe run hitman_hire G67.sff G67.tmapping G72.sff G72.tmapping
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -20,7 +20,7 @@ about title: "hitman_hire - Prepare amplicons for analysis"
 
 Bpipe.run {
    "%.*" * [
-      qmapping2tmapping + sff2fastq + split_fastq_libraries + "%.fastq" * [ rename_seqs ]
+      sff2fastq + split_fastq_libraries + "%.fastq" * [ rename_seqs ]
    ] + cat_files + final_report
 }
 
