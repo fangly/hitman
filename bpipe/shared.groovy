@@ -1,6 +1,35 @@
 // Shared modules for Bpipe
 
 
+gunzip = {
+   doc title: "Uncompress files compressed with GZIP",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   def ext = (input =~ /\.([^\.]*)$/)[0][1]
+   def out = output.prefix
+   if (ext == "gz") {
+      out = out.replaceFirst(~/\.[^\.]+$/, '')
+      produce(out) {
+         exec """
+            echo "Uncompressing GZIP file" &&
+            gunzip -c $input.gz > $out
+         """
+      }
+   } else {
+      produce(out) {
+         exec """
+            echo "Skipping GZIP decompression..." &&
+            cp $input $output
+         """
+      }
+      // TODO: When bug #90 is fixed, replace by: forward input
+      // See code.google.com/p/bpipe/issues/detail?id=90
+   }
+}
+
+
 @Transform("mcf")
 qmapping2mcf = {
    doc title: "Create a 454 MID mapping file from a QIIME mapping file",
@@ -75,16 +104,14 @@ split_fastq_libraries = {
 
 sff2fastq = {
    doc title: "Convert an SFF file to FASTQ",
-       desc:  """Do nothing if input is already FASTQ. Parameters:
+       desc:  """Do nothing if input is in another format. Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    def fmt = null
    for ( file in inputs ) {
       def ext = (file =~ /\.([^\.]*)$/)[0][1]
-      if (ext == "fastq") {
-         fmt = ext
-      } else if (ext == "sff") {
+      if (ext == "sff") {
          fmt = ext
          break
       }
@@ -97,38 +124,50 @@ sff2fastq = {
             sff2fastq -o $output.fastq $input.sff
          """
       }
-   } else if (fmt == "fastq") {
-      exec """
-         echo "Skipping conversion from SFF to FASTQ..." &&
-         cp $input.fastq $output.fastq
-      """
-      // TODO: When bug #90 is fixed, replace by: forward input
-      // See code.google.com/p/bpipe/issues/detail?id=90
    } else {
       exec """
-         echo "No SFF or FASTQ files provided" &&
-         exit 1
+         echo "Skipping conversion from SFF to FASTQ..."
       """
-      // TODO: When Bpipe 0.9.8.6_beta_2+ is released, replace by:
-      // fail "No SFF or FASTQ files were provided"
+      forward input
    }
 }
 
 
-@Filter("merge_paired_reads")
-merge_read_pairs = {
-   doc title: "Merge pairs of FASTQ reads that overlap using Pandaseq (& keep ambiguities)",
+@Filter("merge_pairs")
+merge_pairs = {
+   doc title: "Merge pairs of FASTQ reads that overlap using Pandaseq",
        desc:  """Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   println("Inputs are: "+inputs)
+   println("Number of inputs: "+inputs.size())
+   if (inputs.size() != 2) {
+      exec """
+         echo "Skipping paired-end merging..."
+      """
+      forward input
+   } else {
+         echo "Merging paired-end reads"
+
+   }
+//   for ( file in inputs ) {
+//      def ext = (file =~ /\.([^\.]*)$/)[0][1]
+//      if (ext == "fastq") {
+//         fmt = ext
+//      } else if (ext == "sff") {
+//         fmt = ext
+//         break
+//      }
+//   }
    //pandaseq -f $FWD -r $REV -T $THREADS -F -w $OUT_MERGED -u $OUT_SINGLES
-   //exec """
-   //   module load pandaseq &&
-   //   ////TODO: pandaseq -f $FWD -r $REV -T $threads -F -w $output -u $OUT_SINGLES
-   //"""
+//   exec """
+//      ////module load pandaseq &&
+//      ////TODO: pandaseq -f $FWD -r $REV -T $threads -F -w $output -u $OUT_SINGLES
+//   """
    // Alternatively, USEARCH can perform paired read merging:i
    // http://www.drive5.com/usearch/manual/fastq_mergepairs.html:w
+   forward input
 }
 
 
