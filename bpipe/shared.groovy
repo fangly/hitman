@@ -378,7 +378,7 @@ rm_singletons = {
       exec """
          NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
          echo "Not removing \$NOF_SINGLETONS singletons..." &&
-         cp $input.otus $output.otus
+         ln -s $input.otus $output.otus
       """
    } else {
       // http://drive5.com/usearch/manual/sortbysize.html
@@ -531,7 +531,7 @@ rm_chimeras = {
    if (skip == 1) {
       exec """
          echo "Skipping chimera removal..." &&
-         cp $input.otus $output.otus
+         ln -s $input.otus $output.otus
       """
    } else {
       // http://www.drive5.com/usearch/manual/uchime_ref.html
