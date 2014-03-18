@@ -29,7 +29,7 @@ TAXO_STR="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_taxo
 // FASTA file containing sequences in the desired taxonomic system
 TAXO_DB="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_seqs.fna"
 
-// CopyRighter gene copy number database (skip if database is '')
+// CopyRighter gene copy number database (skip if database is 0)
 GCN_DB="/srv/db/copyrighter/ssu_img40_gg201210_merged.txt"
 
 // Minimum identity percent for the taxonomic assignment
