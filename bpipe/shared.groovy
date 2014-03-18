@@ -134,7 +134,6 @@ sff2fastq = {
 }
 
 
-@Filter("merge_pairs")
 merge_pairs = {
    doc title: "Merge pairs of FASTQ reads that overlap using Pandaseq",
        desc:  """Parameters:
@@ -149,26 +148,25 @@ merge_pairs = {
       """
       forward input
    } else {
-         echo "Merging paired-end reads"
-
+      filter("merge_pairs") {
+         exec """
+            echo "Merging paired-end reads"
+            module load pandaseq &&
+            SINGLES_FILE=`mktemp tmp_pandaseq_singles_XXXXXXXX.txt` &&
+            STATS_FILE=`mktemp tmp_pandaseq_stats_XXXXXXXX.txt` &&
+            pandaseq -f $input1.fastq -r $input2.fastq -T $threads -F -w $output -g $STATS_FILE -u $SINGLES_FILE
+         """
+         // &&
+         //   NO_MATCH=`grep -c "^N" $output.uc` &&
+         //   echo "Number of non-matching reads: \$NO_MATCH"
+      }
    }
-//   for ( file in inputs ) {
-//      def ext = (file =~ /\.([^\.]*)$/)[0][1]
-//      if (ext == "fastq") {
-//         fmt = ext
-//      } else if (ext == "sff") {
-//         fmt = ext
-//         break
-//      }
-//   }
-   //pandaseq -f $FWD -r $REV -T $THREADS -F -w $OUT_MERGED -u $OUT_SINGLES
-//   exec """
-//      ////module load pandaseq &&
-//      ////TODO: pandaseq -f $FWD -r $REV -T $threads -F -w $output -u $OUT_SINGLES
-//   """
-   // Alternatively, USEARCH can perform paired read merging:i
-   // http://www.drive5.com/usearch/manual/fastq_mergepairs.html:w
-   forward input
+
+
+
+   // Alternatives:
+   //   USEARCH fastq_mergepairs: http://www.drive5.com/usearch/manual/fastq_mergepairs.html
+   //   ea-utils fastq-join: : http://code.google.com/p/ea-utils/wiki/FastqJoin
 }
 
 
@@ -435,7 +433,6 @@ fasta_stats = {
 }
 
 
-@Filter("rm_singletons")
 rm_singletons = {
    doc title: "Remove singleton reads",
        desc:  """Parameters:
@@ -445,18 +442,20 @@ rm_singletons = {
    if (skip == 1) {
       exec """
          NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
-         echo "Not removing \$NOF_SINGLETONS singletons..."
+         echo "Skipping removal of \$NOF_SINGLETONS singletons..."
       """
       forward input
    } else {
-      // http://drive5.com/usearch/manual/sortbysize.html
-      // usearch -sortbysize derep.fasta -output derep2.fasta -minsize 2
-      exec """
-         NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
-         echo "Removing \$NOF_SINGLETONS singletons!" &&
-         module load usearch/7.0.1001 &&
-         usearch -sortbysize $input.otus -output $output.otus -minsize 2
-      """
+      filter("rm_singletons") {
+         // http://drive5.com/usearch/manual/sortbysize.html
+         // usearch -sortbysize derep.fasta -output derep2.fasta -minsize 2
+         exec """
+            NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
+            echo "Removing \$NOF_SINGLETONS singletons!" &&
+            module load usearch/7.0.1001 &&
+            usearch -sortbysize $input.otus -output $output.otus -minsize 2
+         """
+      }
    }
 }
 
@@ -588,7 +587,6 @@ dereplicate = {
 }
 
 
-@Filter("rm_chimeras")
 rm_chimeras = {
    doc title: "Chimera filtering using a reference database",
        desc:  """Parameters:
@@ -602,13 +600,15 @@ rm_chimeras = {
       """
       forward input
    } else {
-      // http://www.drive5.com/usearch/manual/uchime_ref.html
-      // usearch -uchime_ref otus1.fa -db $d/gold.fa -strand plus -nonchimeras otus2.fa
-      exec """
-         echo "Removing chimeras!" &&
-         module load usearch/7.0.1001 &&   
-         usearch -uchime_ref $input.otus -db $db -threads $threads -strand plus -nonchimeras $output.otus
-      """
+      filter("rm_chimeras") {
+         // http://www.drive5.com/usearch/manual/uchime_ref.html
+         // usearch -uchime_ref otus1.fa -db $d/gold.fa -strand plus -nonchimeras otus2.fa
+         exec """
+            echo "Removing chimeras!" &&
+            module load usearch/7.0.1001 &&   
+            usearch -uchime_ref $input.otus -db $db -threads $threads -strand plus -nonchimeras $output.otus
+         """
+      }
    }
 }
 
