@@ -1,13 +1,12 @@
 Changelog for Hitman
 
-x.x xxxx-xx-xx
- - Now using 2-columnm tabular format instead of QIIME for input mapping files
- - Input can now be SFF or FASTQ files
- - Argument --input is now used for all scripts to provide sequences
- - hitman_hire now has a --mapping argument separate from --input
- - Support for GZIP-compressed input files
+0.2 2014-03-18
  - Support for paired-end amplicon reads
- - Mapping file is now optional
+ - Support for GZIP-compressed input files
+ - Input mapping files are now optional, use 2-columnm tabular format instead
+   of QIIME, and have a --mapping argument (separate from --input)
+ - Input sequences can be formatted in SFF or FASTQ
+ - Argument --input is now used for all scripts to provide sequences
 
 0.1 2014-03-13
  - Initial version

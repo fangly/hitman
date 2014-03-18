@@ -42,7 +42,7 @@ necessary. Default: dir.default
 
 =head1 VERSION
 
-0.1
+0.2
 
 =head1 AUTHOR
 
