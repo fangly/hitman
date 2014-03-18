@@ -16,7 +16,7 @@ about title: "hitman_hire - Prepare amplicons for analysis"
 
 Bpipe.run {
    "%"       * [ gunzip + sff2fastq    ] +
-   "%.*"     * [ fastqjoin             ] +
+   "%.*"     * [ fastqjoin              ] +
    "%.*"     * [ split_fastq_libraries ] +
    "%.fastq" * [ rename_seqs           ] +
    cat_files + final_report

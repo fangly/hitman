@@ -23,7 +23,7 @@ Dependencies:
    bpipe
    sfffile
    sff2fastq
-   pandaseq
+   pandaseq 2.5
    fastx_toolkit
    ea-utils
    acacia
