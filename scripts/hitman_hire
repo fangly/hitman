@@ -13,19 +13,33 @@ produces a FASTQ file suitable for hitman_deploy.
 
 =item -i <seqs>... | --input <seqs>...
 
-Input SFF (or FASTQ) files containing the raw amplicon reads. The files must
-have the *.sff (or *.fastq) extension.
+Input SFF (or FASTQ) files containing the raw amplicon reads to process. The
+files must have the *.sff (or *.fastq) extension. The *.gz extension is further
+required for files compressed with GZIP.
 
 =for Euclid:
    seqs.type: readable
 
+=back
+
+=head1 OPTIONAL ARGUMENTS
+
+=item -t <three>... | --three <three>...
+
+If paired-end sequencing was used, the files given to --input should be the
+5' sequences, while you should provide the 3' sequences to --three. Also, the
+file names for the 5' and 3' end must be of the form <basename>.<pair>.<extension>,
+e.g. "Sample1.R1.fastq" and "Sample1.R2.fastq".
+
 =item -m <mapping>... | --mapping <mapping>...
 
-Input mapping files indicating the multiplex identifier (MID) sequence used for
-each sample. The files should have the *.tmapping extension and be in 2-column
-tabular format (columns sample ID and MID). When using several mapping files,
-make sure that they have the same basename as the corresponding sequence file
-given to --input, e.g. "Run67.tmapping" for sequences given in "Run67.sff".
+If multiplex sequencing was used, multiple samples are present in each --input
+file. Provide the mapping files indicating the multiplex identifier (MID)
+sequence used for each sample. The files should have the *.tmapping extension
+and be in 2-column tabular format (columns sample ID and MID). When using
+mapping files, make sure that they have the same basename as the corresponding
+sequence file given to --input, e.g. "Run67.tmapping" for reads given in
+"Run67.sff".
 
 =for Euclid:
    mapping.type: readable
@@ -45,6 +59,7 @@ use Hitman;
 Hitman::parse_args();
 validate_input();
 my $inputs = [ @{$ARGV{'--input'}},
+               exists $ARGV{'--three'}   ? @{$ARGV{'--three'}}   : (),
                exists $ARGV{'--mapping'} ? @{$ARGV{'--mapping'}} : () ];
 Hitman::run_hitman( $inputs );
 
@@ -52,11 +67,11 @@ exit;
 
 
 sub validate_input {
-   my $re = qr/\.[^.]*/;
+   my $re  = qr/\..*/;
    my $num_files = scalar @{$ARGV{'--input'}};
-   my @file_types = ('mapping');
+   my @file_types = ('--mapping', '--three');
    for my $type (@file_types) {
-      my $val = $ARGV{'--'.$type};
+      my $val = $ARGV{$type};
       next if not defined $val;
       if (scalar @$val != $num_files ) {
          die "Error: The number of $type files did not match the number of ".
@@ -65,7 +80,7 @@ sub validate_input {
       for my $i (0 .. $num_files-1) {
          my $f1 = $ARGV{'--input'}->[$i];
          my $f2 = $val->[$i];
-         if (not fileparse($f1, $re) eq fileparse($f2, $re)) {
+         if ( not fileparse($f1, $re) eq fileparse($f2, $re) ) {
             die "Error: Name of file '$f2' did not match that of file '$f1'\n";
          }
       }

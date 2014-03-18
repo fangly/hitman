@@ -134,39 +134,69 @@ sff2fastq = {
 }
 
 
-merge_pairs = {
+pandaseq = {
    doc title: "Merge pairs of FASTQ reads that overlap using Pandaseq",
-       desc:  """Parameters:
+       desc:  """Skip if not exactly two fastq files were given. Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   println("Inputs are: "+inputs)
-   println("Number of inputs: "+inputs.size())
-   if (inputs.size() != 2) {
+   def count = 0
+   for ( file in inputs ) {
+      if ( (file =~ /\.([^\.]*)$/)[0][1] == 'fastq' ) {
+         count = count + 1
+      }
+   }
+   if (count != 2) {
       exec """
          echo "Skipping paired-end merging..."
       """
       forward input
    } else {
-      filter("merge_pairs") {
+      filter("pandaseq") {
          exec """
             echo "Merging paired-end reads"
-            module load pandaseq &&
+            module load pandaseq/2.5 &&
             SINGLES_FILE=`mktemp tmp_pandaseq_singles_XXXXXXXX.txt` &&
             STATS_FILE=`mktemp tmp_pandaseq_stats_XXXXXXXX.txt` &&
             pandaseq -f $input1.fastq -r $input2.fastq -T $threads -F -w $output -g $STATS_FILE -u $SINGLES_FILE
          """
-         // &&
-         //   NO_MATCH=`grep -c "^N" $output.uc` &&
-         //   echo "Number of non-matching reads: \$NO_MATCH"
+         // TODO: Report number of non-merged reads
       }
    }
-
-
-
    // Alternatives:
    //   USEARCH fastq_mergepairs: http://www.drive5.com/usearch/manual/fastq_mergepairs.html
    //   ea-utils fastq-join: : http://code.google.com/p/ea-utils/wiki/FastqJoin
+}
+
+
+fastqjoin = {
+   doc title: "Merge pairs of FASTQ reads that overlap using fastq-join",
+       desc:  """Skip if not exactly two fastq files were given. Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   def count = 0
+   for ( file in inputs ) {
+      if ( (file =~ /\.([^\.]*)$/)[0][1] == 'fastq' ) {
+         count = count + 1
+      }
+   }
+   if (count != 2) {
+      exec """
+         echo "Skipping paired-end merging..."
+      """
+      forward input
+   } else {
+      filter("join") {
+         exec """
+            echo "Merging paired-end reads" &&
+            module load ea_utils &&
+            fastq-join $input1.fastq $input2.fastq -o ${input.prefix}.%.fastq &&
+            NONMERGED=`grep -c '^@' ${input.prefix}.un1.fastq` &&
+            echo "Approx. $NONMERGED pairs of reads could not be merged"
+         """
+      }
+   }
 }
 
 

@@ -6,6 +6,7 @@ x.x xxxx-xx-xx
  - Argument --input is now used for all scripts to provide sequences
  - hitman_hire now has a --mapping argument separate from --input
  - Support for GZIP-compressed input files
+ - Support for paired-end amplicon reads
 
 0.1 2014-03-13
  - Initial version

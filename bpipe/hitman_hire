@@ -1,10 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Given SFF (or FASTQ) files and corresponding tabular mapping files, extract the
-// sequences from the desired samples and put them in a single FASTQ file.
+// sequences from the desired samples and put them in a single FASTQ file. These
+// input files can be gzipped. When providing paired-end reads, use a dot-notation
+// to distinguish the 5' from the 3' reads.
 // Usage example:
 //    bpipe run hitman_hire G67.sff G67.tmapping G72.sff G72.tmapping
-//    bpipe run hitman_hire G67_L.fastq G67_R.fastq G72_L.fastq G72_R.fastq
+//    bpipe run hitman_hire G67.R1.fastq G67.R2.fastq G72.R1.fastq G72.R2.fastq
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -13,15 +15,14 @@ about title: "hitman_hire - Prepare amplicons for analysis"
 
 
 Bpipe.run {
-   "%" * [ gunzip + sff2fastq ] +
-   "%.*" * [
-      split_fastq_libraries + "%.fastq" * [ rename_seqs ]
-   ] + cat_files + final_report
+   "%"       * [ gunzip + sff2fastq    ] +
+   "%.*"     * [ fastqjoin             ] +
+   "%.*"     * [ split_fastq_libraries ] +
+   "%.fastq" * [ rename_seqs           ] +
+   cat_files + final_report
 }
 
 
-// now:              [sff2fastq] +                  split_fastq_libraries  + "%.fastq" * [ rename_seqs ]
-// then:  [gunzip] + [sff2fastq] +                  split_fastq_libraries  + "%.fastq" * [ rename_seqs ]
-// then:             [sff2fastq] + [merge_pairs] +  split_fastq_libraries  + "%.fastq" * [ rename_seqs ]
-// then:             [sff2fastq] + [merge_pairs] + [split_fastq_libraries] + "%.fastq" * [ rename_seqs ]
+// now : [gunzip] + [sff2fastq] + [merge_pairs] +  split_fastq_libraries  + rename_seqs
+// then: [gunzip] + [sff2fastq] + [merge_pairs] + [split_fastq_libraries] + rename_seqs
 
