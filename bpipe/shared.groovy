@@ -20,7 +20,7 @@ gunzip = {
    } else {
       produce(out) {
          exec """
-            echo "Skipping GZIP decompression..." &&
+            echo "Skipping GZIP decompression" &&
             cp $input $output
          """
       }
@@ -79,13 +79,29 @@ split_fastq_libraries = {
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   //http://code.google.com/p/ea-utils/wiki/FastqMultx
-   produce("${input.prefix}.*.fastq") {
+   def skip = 1
+   for ( file in inputs ) {
+      if ( (file =~ /\.([^\.]*)$/)[0][1] == "tmapping" ) {
+         skip = 0
+         break
+      }
+   }
+   println("skip: "+skip) //////
+   if (skip == 0) {
       exec """
-         module load ea_utils &&
-         fastq-multx -B $input.tmapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0 &&
-         rm ${input.prefix}.unmatched.fastq
+         echo "Skipping library split by MID"
       """
+      forward input
+   } else {
+      //http://code.google.com/p/ea-utils/wiki/FastqMultx
+      produce("${input.prefix}.*.fastq") {
+         exec """
+            echo "Splitting libraries by MID" &&
+            module load ea_utils &&
+            fastq-multx -B $input.tmapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0 &&
+            rm ${input.prefix}.unmatched.fastq
+         """
+      }
    }
    // Alternatives:
    // - QIIME split_libraries_fastq.py, but does a bunch of extra stuff that's not needed
@@ -127,7 +143,7 @@ sff2fastq = {
       }
    } else {
       exec """
-         echo "Skipping conversion from SFF to FASTQ..."
+         echo "Skipping conversion from SFF to FASTQ"
       """
       forward input
    }
@@ -148,7 +164,7 @@ pandaseq = {
    }
    if (count != 2) {
       exec """
-         echo "Skipping paired-end merging..."
+         echo "Skipping paired-end merging"
       """
       forward input
    } else {
@@ -179,6 +195,7 @@ fastqjoin = {
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   // fastq-join merges many fewer pairs than pandaseq, using default parameters
    def count = 0
    for ( file in inputs ) {
       if ( (file =~ /\.([^\.]*)$/)[0][1] == 'fastq' ) {
@@ -187,7 +204,7 @@ fastqjoin = {
    }
    if (count != 2) {
       exec """
-         echo "Skipping paired-end merging..."
+         echo "Skipping paired-end merging"
       """
       forward input
    } else {
@@ -256,13 +273,13 @@ acacia = {
    produce(input.prefix+".acacia.fna") {
       if (skip==1) {
          exec """
-            echo "Skipping Acacia..." &&
+            echo "Skipping Acacia denoising" &&
             module load fastx_toolkit &&
             fastq_to_fasta -i $input.fastq -n -Q 33 -o $output.fna
          """
       } else {
          exec """
-            echo "Running Acacia!"                                       &&
+            echo "Denoising using Acacia"                                &&
             module load acacia/1.52                                      &&
             CONF_FILE=`mktemp tmp_acacia_XXXXXXXX.conf`                  &&
             echo "FASTA=FALSE"                             > \$CONF_FILE &&
@@ -476,7 +493,7 @@ rm_singletons = {
    if (skip == 1) {
       exec """
          NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
-         echo "Skipping removal of \$NOF_SINGLETONS singletons..."
+         echo "Skipping removal of \$NOF_SINGLETONS singletons"
       """
       forward input
    } else {
@@ -485,7 +502,7 @@ rm_singletons = {
          // usearch -sortbysize derep.fasta -output derep2.fasta -minsize 2
          exec """
             NOF_SINGLETONS=`grep '^>' $input.otus | grep -c 'size=1;'` &&
-            echo "Removing \$NOF_SINGLETONS singletons!" &&
+            echo "Removing \$NOF_SINGLETONS singletons" &&
             module load usearch/7.0.1001 &&
             usearch -sortbysize $input.otus -output $output.otus -minsize 2
          """
@@ -630,7 +647,7 @@ rm_chimeras = {
        author: "Florent Angly (florent.angly@gmail.com)"
    if (skip == 1) {
       exec """
-         echo "Skipping chimera removal..."
+         echo "Skipping chimera removal"
       """
       forward input
    } else {
@@ -638,7 +655,7 @@ rm_chimeras = {
          // http://www.drive5.com/usearch/manual/uchime_ref.html
          // usearch -uchime_ref otus1.fa -db $d/gold.fa -strand plus -nonchimeras otus2.fa
          exec """
-            echo "Removing chimeras!" &&
+            echo "Removing chimeras" &&
             module load usearch/7.0.1001 &&   
             usearch -uchime_ref $input.otus -db $db -threads $threads -strand plus -nonchimeras $output.otus
          """
@@ -733,7 +750,7 @@ copyrighter = {
        author: "Florent Angly (florent.angly@gmail.com)"
    if (db) {
       exec """
-         echo "Running CopyRighter!" &&
+         echo "Running CopyRighter" &&
          module load copyrighter &&
          copyrighter -i $input -d $db -o $output -l id -v
       """
