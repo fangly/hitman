@@ -16,7 +16,7 @@ Input FASTA file containing the cleaned, trimmed sequences from the previous
 hitman_deploy step. The file must have a *.fna extension.
 
 =for Euclid:
-   input.type: readable
+   seqs.type: readable
 
 =item -q <primers> | --primers <primers>
 
