@@ -5,23 +5,23 @@ values make it suitable for bacterial and archaeal profiling in 454 and Illumina
 datasets.
 
 Three types of input files are necessary:
-1/ SFF (or FASTQ) files containing the amplicon reads (can be gziped)
-2/ 2-column tabular mapping files indicating the multiplex identifiers (MIDs)
+1/ SFF (or FASTQ) files containing regular or paired-end amplicon reads (can be
+   gziped)
+2/ FASTA file containing the primers used. The primer from which sequencing
+   proceeded must be first in the file.
+3/ If the sequencing run was multiplexed, a 2-column tabular mapping files
+   indicating the multiplex identifiers (MIDs)
    used for each sample.
-3/ FASTA file containing the primers used. The primer from which sequencing
-   proceeds must be first in the file.
 
 The pipeline itself comprises three steps:
-1/ hitman_hire: Collect sequences to analyze from SFF files.
+1/ hitman_hire: Collect amplicon reads to analyze from SFF/FASTQ files.
 2/ hitman_deploy: Quality-filter and trim the sequences.
 3/ hitman_execute: Produce a rarefied OTU table with taxonomic assignments.
 
 Run these scripts with the --man flag to learn more about what they do.
 
-
 Dependencies:
    bpipe
-   sfffile
    sff2fastq
    pandaseq 2.5
    fastx_toolkit

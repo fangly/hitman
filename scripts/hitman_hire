@@ -36,10 +36,10 @@ e.g. "Sample1.R1.fastq" and "Sample1.R2.fastq".
 
 If multiplex sequencing was used, multiple samples are present in each --input
 file. Provide the mapping files indicating the multiplex identifier (MID)
-sequence used for each sample. The files should have the *.tmapping extension
+sequence used for each sample. The files should have the *.mapping extension
 and be in 2-column tabular format (columns sample ID and MID). When using
 mapping files, make sure that they have the same basename as the corresponding
-sequence file given to --input, e.g. "Run67.tmapping" for reads given in
+sequence file given to --input, e.g. "Run67.mapping" for reads given in
 "Run67.sff".
 
 =for Euclid:

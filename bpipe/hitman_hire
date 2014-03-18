@@ -5,7 +5,7 @@
 // input files can be gzipped. When providing paired-end reads, use a dot-notation
 // to distinguish the 5' from the 3' reads.
 // Usage example:
-//    bpipe run hitman_hire G67.sff G67.tmapping G72.sff G72.tmapping
+//    bpipe run hitman_hire G67.sff G67.mapping G72.sff G72.mapping
 //    bpipe run hitman_hire G67.R1.fastq G67.R2.fastq G72.R1.fastq G72.R2.fastq
 
 ////////////////////////////////////////////////////////////////////////////////

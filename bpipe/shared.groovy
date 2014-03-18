@@ -30,47 +30,47 @@ gunzip = {
 }
 
 
-@Transform("mcf")
-qmapping2mcf = {
-   doc title: "Create a 454 MID mapping file from a QIIME mapping file",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      echo -e "custom_MIDs\n{" > $output.mcf &&
-      cut -f 1,2 $input.qmapping | grep -v ^# | perl -p -e 's/^(.+)\t(.+)\$/mid = "\$1", "\$2", 2;/;' >> $output.mcf &&
-      echo -e "}\n" >> $output.mcf
-   """
-}
+//@Transform("mcf")
+//qmapping2mcf = {
+//   doc title: "Create a 454 MID mapping file from a QIIME mapping file",
+//       desc:  """Parameters:
+//                    none""",
+//       constraints: "",
+//       author: "Florent Angly (florent.angly@gmail.com)"
+//   exec """
+//      echo -e "custom_MIDs\n{" > $output.mcf &&
+//      cut -f 1,2 $input.qmapping | grep -v ^# | perl -p -e 's/^(.+)\t(.+)\$/mid = "\$1", "\$2", 2;/;' >> $output.mcf &&
+//      echo -e "}\n" >> $output.mcf
+//   """
+//}
 
 
-@Transform("tmapping")
-qmapping2tmapping = {
-   doc title: "Create a tabular mapping file (2 columns) from a QIIME mapping file",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      cut -f 1-2 $input.qmapping > $output.tmapping
-   """
-}
+//@Transform("mapping")
+//qmapping2tmapping = {
+//   doc title: "Create a tabular mapping file (2 columns) from a QIIME mapping file",
+//       desc:  """Parameters:
+//                    none""",
+//       constraints: "",
+//       author: "Florent Angly (florent.angly@gmail.com)"
+//   exec """
+//      cut -f 1-2 $input.qmapping > $output.mapping
+//   """
+//}
 
 
-split_sff_libraries = {
-   doc title: "Split SFF libraries by MID using sfffile",
-       desc:  """Uses an MCF mapping file. Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   produce("${input.prefix}*.sff") {
-      exec """
-         module load 454 &&
-         sfffile -s custom_MIDs -mcf $input.mcf -o $input.prefix $input.sff
-      """
-   }
-}
+//split_sff_libraries = {
+//   doc title: "Split SFF libraries by MID using sfffile",
+//       desc:  """Uses an MCF mapping file. Parameters:
+//                    none""",
+//       constraints: "",
+//       author: "Florent Angly (florent.angly@gmail.com)"
+//   produce("${input.prefix}*.sff") {
+//      exec """
+//         module load 454 &&
+//         sfffile -s custom_MIDs -mcf $input.mcf -o $input.prefix $input.sff
+//      """
+//   }
+//}
 
 
 split_fastq_libraries = {
@@ -82,7 +82,7 @@ split_fastq_libraries = {
        author: "Florent Angly (florent.angly@gmail.com)"
    def skip = 1
    for ( file in inputs ) {
-      if ( (file =~ /\.([^\.]*)$/)[0][1] == "tmapping" ) {
+      if ( (file =~ /\.([^\.]*)$/)[0][1] == "mapping" ) {
          skip = 0
          break
       }
@@ -104,7 +104,7 @@ split_fastq_libraries = {
          exec """
             echo "Splitting libraries by MID" &&
             module load ea_utils &&
-            fastq-multx -B $input.tmapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0 &&
+            fastq-multx -B $input.mapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0 &&
             rm ${input.prefix}.unmatched.fastq
          """
       }
@@ -197,36 +197,36 @@ pandaseq = {
 }
 
 
-fastqjoin = {
-   doc title: "Merge pairs of FASTQ reads that overlap using fastq-join",
-       desc:  """Skip if not exactly two fastq files were given. Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   // fastq-join merges many fewer pairs than pandaseq, using default parameters
-   def count = 0
-   for ( file in inputs ) {
-      if ( (file =~ /\.([^\.]*)$/)[0][1] == 'fastq' ) {
-         count = count + 1
-      }
-   }
-   if (count != 2) {
-      exec """
-         echo "Skipping paired-end merging"
-      """
-      forward input
-   } else {
-      filter("join") {
-         exec """
-            echo "Merging paired-end reads" &&
-            module load ea_utils &&
-            fastq-join $input1.fastq $input2.fastq -o ${input.prefix}.%.fastq &&
-            NONMERGED=`grep -c '^@' ${input.prefix}.un1.fastq` &&
-            echo "Approx. $NONMERGED pairs of reads could not be merged"
-         """
-      }
-   }
-}
+//fastqjoin = {
+//   doc title: "Merge pairs of FASTQ reads that overlap using fastq-join",
+//       desc:  """Skip if not exactly two fastq files were given. Parameters:
+//                    none""",
+//       constraints: "",
+//       author: "Florent Angly (florent.angly@gmail.com)"
+//   // fastq-join merges many fewer pairs than pandaseq, using default parameters
+//   def count = 0
+//   for ( file in inputs ) {
+//      if ( (file =~ /\.([^\.]*)$/)[0][1] == 'fastq' ) {
+//         count = count + 1
+//      }
+//   }
+//   if (count != 2) {
+//      exec """
+//         echo "Skipping paired-end merging"
+//      """
+//      forward input
+//   } else {
+//      filter("join") {
+//         exec """
+//            echo "Merging paired-end reads" &&
+//            module load ea_utils &&
+//            fastq-join $input1.fastq $input2.fastq -o ${input.prefix}.%.fastq &&
+//            NONMERGED=`grep -c '^@' ${input.prefix}.un1.fastq` &&
+//            echo "Approx. $NONMERGED pairs of reads could not be merged"
+//         """
+//      }
+//   }
+//}
 
 
 @Filter("rename_seqs")
@@ -268,7 +268,6 @@ final_report = {
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    println("Outputs are : "+inputs)
-   //forward inputs
 }
 
 
