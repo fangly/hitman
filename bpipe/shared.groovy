@@ -3,7 +3,7 @@
 
 gunzip = {
    doc title: "Uncompress files compressed with GZIP",
-       desc:  """Parameters:
+       desc:  """This step is skipped is input is not compressed. Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
@@ -59,8 +59,8 @@ qmapping2tmapping = {
 
 
 split_sff_libraries = {
-   doc title: "Use MIDs in a MCF mapping file to separate SFF records belonging to different samples using sfffile",
-       desc:  """Parameters:
+   doc title: "Split SFF libraries by MID using sfffile",
+       desc:  """Uses an MCF mapping file. Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
@@ -74,8 +74,9 @@ split_sff_libraries = {
 
 
 split_fastq_libraries = {
-   doc title: "Use MIDs in a tabular mapping file to separate FASTQ records belonging to different samples using fastq-multx",
-       desc:  """Parameters:
+   doc title: "Split FASTQ libraries by MID using fastq-multx",
+       desc:  """Uses a 2-column tabular mapping file. This step is skipped if
+                 no mapping file is provided. Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
@@ -86,12 +87,17 @@ split_fastq_libraries = {
          break
       }
    }
-   println("skip: "+skip) //////
-   if (skip == 0) {
-      exec """
-         echo "Skipping library split by MID"
-      """
-      forward input
+   if (skip == 1) {
+      def source   = new File(input.fastq).getName()
+      def basename = source.replaceFirst(~/\..+$/, '')
+      def output   = input.prefix+"."+basename+".fastq"
+      produce( output ) {
+         // Simply prepare the file for the rename_seqs step
+         exec """
+            echo "Skipping library split by MID" &&
+            ln -f -s $source $output
+         """
+      }
    } else {
       //http://code.google.com/p/ea-utils/wiki/FastqMultx
       produce("${input.prefix}.*.fastq") {

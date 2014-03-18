@@ -23,6 +23,3 @@ Bpipe.run {
 }
 
 
-// now : [gunzip] + [sff2fastq] + [merge_pairs] +  split_fastq_libraries  + rename_seqs
-// then: [gunzip] + [sff2fastq] + [merge_pairs] + [split_fastq_libraries] + rename_seqs
-

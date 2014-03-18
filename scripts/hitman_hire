@@ -11,11 +11,12 @@ produces a FASTQ file suitable for hitman_deploy.
 
 =over
 
-=item -i <seqs>... | --input <seqs>...
+=item -i <seqs>... | --input <seqs>... | -f <seqs>... | --five <seqs>...
 
 Input SFF (or FASTQ) files containing the raw amplicon reads to process. The
 files must have the *.sff (or *.fastq) extension. The *.gz extension is further
-required for files compressed with GZIP.
+required for files compressed with GZIP. Each file is assumed to contain reads
+from a single sample, unless --mapping is provided.
 
 =for Euclid:
    seqs.type: readable
@@ -26,7 +27,7 @@ required for files compressed with GZIP.
 
 =item -t <three>... | --three <three>...
 
-If paired-end sequencing was used, the files given to --input should be the
+If paired-end sequencing was used, the files given to --five should be the
 5' sequences, while you should provide the 3' sequences to --three. Also, the
 file names for the 5' and 3' end must be of the form <basename>.<pair>.<extension>,
 e.g. "Sample1.R1.fastq" and "Sample1.R2.fastq".
