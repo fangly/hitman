@@ -697,17 +697,17 @@ copyrighter = {
                     'db', gene copy number database (skip if db is '')""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   if (db=="") {
-      exec """
-         echo "Skipping CopyRighter... simply converting to relative abundance" &&
-         module load bio-community &&
-         bc_summarize -if $input -cr 1 -md 0 -rl 0 -op $output.prefix
-      """
-   } else {
+   if (db) {
       exec """
          echo "Running CopyRighter!" &&
          module load copyrighter &&
          copyrighter -i $input -d $db -o $output -l id -v
+      """
+   } else {
+      exec """
+         echo "Skipping CopyRighter... simply converting to relative abundance" &&
+         module load bio-community &&
+         bc_summarize -if $input -cr 1 -md 0 -rl 0 -op $output.prefix
       """
    }
 }
