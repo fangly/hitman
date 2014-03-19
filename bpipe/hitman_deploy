@@ -10,6 +10,9 @@
 
 // Options:
 
+// Flag to skip the computation of sequence statistics
+SKIP_STATS=0
+
 // Quality score from which to start truncating the 3' end of a read
 TRIM_QUAL=13
 // e.g. if you pick 16, all quality scores will be >=17 after truncation
@@ -20,7 +23,7 @@ TRIM_QUAL=13
 // Filter out reads with over this % of expected errors (based on quality scores)
 EE_PERC=3.0
 
-// Flag to perform or skip the Acacia denoising step
+// Flag to skip the Acacia denoising step
 SKIP_DENOISING=0
 
 // Read trimming/discard length
@@ -43,22 +46,24 @@ about title: "hitman_deploy - Quality assurance for amplicons reads"
 
 
 Bpipe.run {
-   fastq_stats.using(stage:'initial') +
-   rm_small_fastq.using(length:TRIM_LEN-10) +
-   fastq_stats.using(stage:'discard') +
-   qual_trim_fastq.using(qual:TRIM_QUAL) +
-   fastq_stats.using(stage:'qtrim') +
-   rm_small_fastq.using(length:TRIM_LEN-10) +
-   fastq_stats.using(stage:'qdiscrd') +
-   trim_fastq.using(length:TRIM_LEN+10) +
-   fastq_stats.using(stage:'trim') +
+   seq_stats.using(stage:'initial', skip:SKIP_STATS) +
+   rm_small_seqs.using(length:TRIM_LEN-10) +
+   seq_stats.using(stage:'discard', skip:SKIP_STATS) +
+   qual_trim_seqs.using(qual:TRIM_QUAL) +
+   seq_stats.using(stage:'qtrim', skip:SKIP_STATS) +
+   rm_small_seqs.using(length:TRIM_LEN-10) +
+   seq_stats.using(stage:'qdiscrd', skip:SKIP_STATS) +
+   trim_seqs.using(length:TRIM_LEN+10) +
+   seq_stats.using(stage:'trim', skip:SKIP_STATS) +
    ee_filter.using(ee:TRIM_LEN*EE_PERC/100) +
-   fastq_stats.using(stage:'eefilt') +
+   seq_stats.using(stage:'eefilt', skip:SKIP_STATS) +
    acacia.using(skip:SKIP_DENOISING) +
-   fasta_stats.using(stage:'acacia') +
-   rm_small_fasta.using(length:TRIM_LEN) +
-   fasta_stats.using(stage:'fdiscrd') +
-   trim_fasta.using(length:TRIM_LEN) +
-   fasta_stats.using(stage:'ftrim') +
+   fasta2fastq +
+   seq_stats.using(stage:'acacia', skip:SKIP_STATS) +
+   rm_small_seqs.using(length:TRIM_LEN) +
+   seq_stats.using(stage:'fdiscrd', skip:SKIP_STATS) +
+   trim_seqs.using(length:TRIM_LEN) +
+   seq_stats.using(stage:'ftrim', skip:SKIP_STATS) +
+   fastq2fasta +
    final_report
 }

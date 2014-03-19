@@ -156,6 +156,41 @@ sff2fastq = {
 }
 
 
+@Transform("fna")
+fastq2fasta = {
+   doc title: "Convert a FASTQ file to FASTA",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load fastx_toolkit &&
+      fastq_to_fasta -i $input.fastq -n -Q 33 -o $output.fna
+   """
+}
+
+
+@Transform("fastq")
+fasta2fastq = {
+   doc title: "Convert a FASTA file to FASTQ, with artificial quality scores",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   // NEBC fasta_to_fastq.py
+   //http://nebc.nerc.ac.uk/tools/code-corner/scripts/sequence-formatting-and-other-text-manipulation
+   // fasta_to_fastq.py input.fna
+   // qual file must be named input.fna.qual
+   exec """
+      fake_qual $input.fna &&
+      mv -f ${input.fna}.qual ${input.prefix}.qual &&
+      module load biopython &&
+      fasta_to_fastq.py $input.fna &&
+      rm ${input.prefix}.qual
+   """
+}
+
+
 pandaseq = {
    doc title: "Merge pairs of FASTQ reads that overlap using Pandaseq",
        desc:  """Skip if not exactly two fastq files were given. Parameters:
@@ -322,22 +357,8 @@ acacia = {
 }
 
 
-@Filter("rm_small_fasta")
-rm_small_fasta = {
-   doc title: "Remove small FASTA reads",
-       desc:  """Parameters:
-                    'length', the minimum length to keep""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load fastx_toolkit &&
-      fastx_clipper -i $input.fna -a ZZZZ -C -n -l $length -Q 33 -o $output.fna
-   """
-}
-
-
-@Filter("rm_small_fastq")
-rm_small_fastq = {
+@Filter("rm_small_seqs")
+rm_small_seqs = {
    doc title: "Remove small FASTQ reads",
        desc:  """Parameters:
                     'length', the minimum length to keep""",
@@ -350,25 +371,11 @@ rm_small_fastq = {
 }
 
 
-@Filter("trim_fasta")
-trim_fasta = {
-   doc title: "Trim FASTA reads",
+@Filter("trim_seqs")
+trim_seqs = {
+   doc title: "Trim FASTQ sequences to the specified length",
        desc:  """Parameters:
-                    'length', the minimum length to keep""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load fastx_toolkit &&
-      fastx_trimmer -i $input.fna -f 1 -l $length -Q 33 -o $output.fna
-   """
-}
-
-
-@Filter("trim_fastq")
-trim_fastq = {
-   doc title: "Trim FASTQ reads",
-       desc:  """Parameters:
-                    'length', the minimum length to keep""",
+                    'length', the trimming length""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    exec """
@@ -378,9 +385,9 @@ trim_fastq = {
 }
 
 
-@Filter("qual_trim_fastq")
-qual_trim_fastq = {
-   doc title: "Quality-based 3' end sequence trimming",
+@Filter("qual_trim_seqs")
+qual_trim_seqs = {
+   doc title: "Quality-based 3' end FASTQ sequence trimming",
        desc:  """Parameters:
                     'qual', the quality score at which to start 3' end trimming""",
        constraints: "",
@@ -395,7 +402,7 @@ qual_trim_fastq = {
 
 @Filter("ee_filter")
 ee_filter = {
-   doc title: "Remove reads with too many expected errors",
+   doc title: "Remove FASTQ reads with too many expected errors",
        desc:  """Parameters:
                     'ee', the maximum number of errors""",
        constraints: "",
@@ -411,83 +418,46 @@ ee_filter = {
 
 LOG_FILE=""
 
-@Transform("stats")
-fastq_stats = {
+seq_stats = {
    doc title: "Log basic FASTQ sequence statistics",
        desc:  """Parameters:
-                    none""",
+                    'stage', name of this step,
+                    'skip', boolean to skip this step (default: 0)""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    // http://www.drive5.com/usearch/manual/fastq_stats.html
-   if(LOG_FILE == "") {
-      LOG_FILE=output.stats
-   }
-   produce(LOG_FILE) {
+   if (skip == 1) {
       exec """
-         if [ ! -e $LOG_FILE ]; then
-            echo "Creating log file $LOG_FILE" &&
-            echo -e "stage\\tnum_seq\\tmin_L\\tmed_L\\tmax_L\\tmin_Q\\tmed_Q\\tmax_Q\\tnum_N" > $LOG_FILE;
-         fi &&
-         echo "Appending stage $stage to log file $LOG_FILE" &&
-         module load usearch/7.0.1001 &&
-         TEMP_FILE=`mktemp tmp_stats_${stage}_XXXXXXXX.txt` &&
-         usearch -fastq_stats $input.fastq -log \$TEMP_FILE &&
-         NUM_SEQS=`grep Recs \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[1])'` &&
-         MAX_LEN=`grep '^>=' \$TEMP_FILE | perl -n -e 'print((split /\\s+/)[1]);'` &&
-         MED_LEN=`grep '[5-9].\\..%\$' \$TEMP_FILE | perl -n -e '@arr=split/\\s+/; if (scalar @arr == 5) { print \$arr[1]; last; }'` &&
-         MIN_LEN=`grep '100\\.0%\$' \$TEMP_FILE | perl -e '\$len="?"; while (<>) { @arr=split /\\s+/; \$len=\$arr[1] if scalar(@arr)==5; }; print \$len'` &&
-         MAX_Q=`grep -A 2 ^ASCII \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[2])'` &&
-         MED_Q=`grep '[5-9].\\..%\$' \$TEMP_FILE | perl -e '\$len=""; while (<>) { @arr=split /\\s+/; if (scalar(@arr)==7 && not(\$len)) { \$len=\$arr[2]; last; } }; print \$len;'` &&
-         MIN_Q=`grep '100\\.0%\$' \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[2])'` &&
-         NUM_N=`perl -n -e 'print \$_ if (\$.%4 == 2);' $input.fastq | grep -o N | wc -l` &&
-         echo -e "$stage\\t\$NUM_SEQS\\t\$MIN_LEN\\t\$MED_LEN\\t\$MAX_LEN\\t\$MIN_Q\\t\$MED_Q\\t$MAX_Q\\t$NUM_N" >> $LOG_FILE &&
-         rm \$TEMP_FILE
+         echo "Skipping computation of sequence statistics"
       """
+   } else {
+      if(LOG_FILE == "") {
+         LOG_FILE=output.stats
+      }
+      produce(LOG_FILE) {
+         exec """
+            if [ ! -e $LOG_FILE ]; then
+               echo "Creating log file $LOG_FILE" &&
+               echo -e "stage\\tnum_seq\\tmin_L\\tmed_L\\tmax_L\\tmin_Q\\tmed_Q\\tmax_Q\\tnum_N" > $LOG_FILE;
+            fi &&
+            echo "Appending stage $stage to log file $LOG_FILE" &&
+            module load usearch/7.0.1001 &&
+            TEMP_FILE=`mktemp tmp_stats_${stage}_XXXXXXXX.txt` &&
+            usearch -fastq_stats $input.fastq -log \$TEMP_FILE &&
+            NUM_SEQS=`grep Recs \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[1])'` &&
+            MAX_LEN=`grep '^>=' \$TEMP_FILE | perl -n -e 'print((split /\\s+/)[1]);'` &&
+            MED_LEN=`grep '[5-9].\\..%\$' \$TEMP_FILE | perl -n -e '@arr=split/\\s+/; if (scalar @arr == 5) { print \$arr[1]; last; }'` &&
+            MIN_LEN=`grep '100\\.0%\$' \$TEMP_FILE | perl -e '\$len="?"; while (<>) { @arr=split /\\s+/; \$len=\$arr[1] if scalar(@arr)==5; }; print \$len'` &&
+            MAX_Q=`grep -A 2 ^ASCII \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[2])'` &&
+            MED_Q=`grep '[5-9].\\..%\$' \$TEMP_FILE | perl -e '\$len=""; while (<>) { @arr=split /\\s+/; if (scalar(@arr)==7 && not(\$len)) { \$len=\$arr[2]; last; } }; print \$len;'` &&
+            MIN_Q=`grep '100\\.0%\$' \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[2])'` &&
+            NUM_N=`perl -n -e 'print \$_ if (\$.%4 == 2);' $input.fastq | grep -o N | wc -l` &&
+            echo -e "$stage\\t\$NUM_SEQS\\t\$MIN_LEN\\t\$MED_LEN\\t\$MAX_LEN\\t\$MIN_Q\\t\$MED_Q\\t$MAX_Q\\t$NUM_N" >> $LOG_FILE &&
+            rm \$TEMP_FILE
+         """
+      }
    }
-   forward input.fastq
-}
-
-
-@Transform("stats")
-fasta_stats = {
-   doc title: "Log basic FASTA sequence statistics",
-       desc:  """Parameters:
-                    none""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   // http://www.drive5.com/usearch/manual/fastq_stats.html
-   if(LOG_FILE == "") {
-      LOG_FILE=output.stats
-   }
-   produce(LOG_FILE) {
-      exec """
-         if [ ! -e $LOG_FILE ]; then
-            echo "Creating log file $LOG_FILE" &&
-            echo -e "stage\\tnum_seq\\tmin_L\\tmed_L\\tmax_L\\tmin_Q\\tmed_Q\\tmax_Q\\tnum_N" > $LOG_FILE;
-         fi &&
-         echo "Appending stage $stage to log file $LOG_FILE" &&
-         fake_qual $input.fna &&
-         TEMP_QUAL=${input.fna}.qual &&
-         TEMP_FASTQ=`mktemp tmp_stats_${stage}_XXXXXXXX.fastq` &&
-         module load usearch/7.0.1001 &&
-         faqual2fastq.py $input.fna \$TEMP_QUAL > \$TEMP_FASTQ &&
-         rm \$TEMP_QUAL &&
-         TEMP_FILE=`mktemp tmp_stats_${stage}_XXXXXXXX.txt` &&
-         usearch -fastq_stats \$TEMP_FASTQ -log \$TEMP_FILE &&
-         rm \$TEMP_FASTQ &&
-         NUM_SEQS=`grep Recs \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[1])'` &&
-         MAX_LEN=`grep '^>=' \$TEMP_FILE | perl -n -e 'print((split /\\s+/)[1]);'` &&
-         MED_LEN=`grep '[5-9].\\..%\$' \$TEMP_FILE | perl -n -e '@arr=split/\\s+/; if (scalar @arr == 6) { print \$arr[1]; last; }'` &&
-         MIN_LEN=`grep '100\\.0%\$' \$TEMP_FILE | perl -e '\$len="?"; while (<>) { @arr=split /\\s+/; \$len=\$arr[1] if scalar(@arr)==5; }; print \$len'` &&
-         MAX_Q='-' &&
-         MED_Q='-' &&
-         MIN_Q='-' &&
-         NUM_N=`grep -v '^>' $input.fna | grep -o N | wc -l` &&
-         echo -e "$stage\\t\$NUM_SEQS\\t\$MIN_LEN\\t\$MED_LEN\\t\$MAX_LEN\\t\$MIN_Q\\t\$MED_Q\\t$MAX_Q\\t$NUM_N" >> $LOG_FILE &&
-         rm \$TEMP_FILE
-      """
-   }
-   forward input.fna
+   forward input
 }
 
 
