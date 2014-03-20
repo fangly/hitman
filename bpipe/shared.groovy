@@ -73,7 +73,7 @@ gunzip = {
 //}
 
 
-split_fastq_libraries = {
+split_libraries = {
    doc title: "Split FASTQ libraries by MID using fastq-multx",
        desc:  """Uses a 2-column tabular mapping file. This step is skipped if
                  no mapping file is provided. Parameters:
@@ -177,10 +177,9 @@ fasta2fastq = {
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   // NEBC fasta_to_fastq.py
-   //http://nebc.nerc.ac.uk/tools/code-corner/scripts/sequence-formatting-and-other-text-manipulation
-   // fasta_to_fastq.py input.fna
-   // qual file must be named input.fna.qual
+   // NEBC fasta_to_fastq.py http://goo.gl/DzmgcD
+   // Usage: fasta_to_fastq.py input.fna
+   // where the qual file must be named input.fna.qual
    exec """
       fake_qual $input.fna &&
       mv -f ${input.fna}.qual ${input.prefix}.qual &&
@@ -191,7 +190,7 @@ fasta2fastq = {
 }
 
 
-pandaseq = {
+merge_pairs = {
    doc title: "Merge pairs of FASTQ reads that overlap using Pandaseq",
        desc:  """Skip if not exactly two fastq files were given. Parameters:
                     none""",
@@ -232,7 +231,7 @@ pandaseq = {
 }
 
 
-//fastqjoin = {
+//fastq_join = {
 //   doc title: "Merge pairs of FASTQ reads that overlap using fastq-join",
 //       desc:  """Skip if not exactly two fastq files were given. Parameters:
 //                    none""",
@@ -365,8 +364,8 @@ rm_small_seqs = {
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    exec """
-      module load fastx_toolkit &&
-      fastx_clipper -i $input.fastq -a ZZZZ -C -n -l $length -Q 33 -o $output.fastq
+      module load trimmomatic &&
+      trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq MINLEN:$length
    """
 }
 
@@ -379,8 +378,8 @@ trim_seqs = {
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    exec """
-      module load fastx_toolkit &&
-      fastx_trimmer -i $input.fastq -f 1 -l $length -Q 33 -o $output.fastq
+      module load trimmomatic &&
+      trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq CROP:$length
    """
 }
 
@@ -398,6 +397,36 @@ qual_trim_seqs = {
       usearch -fastq_filter $input.fastq -fastqout $output.fastq -fastq_truncqual $qual
    """
 }
+
+
+//////////@Filter("qual_trim_seqs")
+//////////qual_trim_seqs = {
+//////////   doc title: "Quality-based 3' end FASTQ sequence trimming",
+//////////       desc:  """Parameters:
+//////////                    'qual', the quality score at which to start 3' end trimming""",
+//////////       constraints: "",
+//////////       author: "Florent Angly (florent.angly@gmail.com)"
+//////////   // https://github.com/najoshi/sickle
+//////////   exec """
+//////////      module load fastx_toolkit &&
+//////////      fastq_quality_trimmer -i $input.fastq -t $qual -l 0 -Q 33 -v -o $output.fastq 
+//////////   """
+//////////}
+
+
+//////////@Filter("qual_trim_seqs")
+//////////qual_trim_seqs = {
+//////////   doc title: "Quality-based 3' end FASTQ sequence trimming",
+//////////       desc:  """Parameters:
+//////////                    'qual', the quality score at which to start 3' end trimming""",
+//////////       constraints: "",
+//////////       author: "Florent Angly (florent.angly@gmail.com)"
+//////////   // https://github.com/najoshi/sickle
+//////////   exec """
+//////////      module load trimmomatic &&
+//////////      trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq TRAILING:$qual  
+//////////   """
+//////////}
 
 
 @Filter("ee_filter")
@@ -425,7 +454,7 @@ seq_stats = {
                     'skip', boolean to skip this step (default: 0)""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   // http://www.drive5.com/usearch/manual/fastq_stats.html
+   // http://code.google.com/p/ea-utils/
    if (skip == 1) {
       exec """
          echo "Skipping computation of sequence statistics"
@@ -438,21 +467,23 @@ seq_stats = {
          exec """
             if [ ! -e $LOG_FILE ]; then
                echo "Creating log file $LOG_FILE" &&
-               echo -e "stage\\tnum_seq\\tmin_L\\tmed_L\\tmax_L\\tmin_Q\\tmed_Q\\tmax_Q\\tnum_N" > $LOG_FILE;
+               echo -e "stage\\tnum_seq\\tmin_L\\tavg_L\\tmax_L\\tmin_Q\\tavg_Q\\tmax_Q\\tperc_N" > $LOG_FILE;
             fi &&
             echo "Appending stage $stage to log file $LOG_FILE" &&
-            module load usearch/7.0.1001 &&
+            module load ea_utils &&
             TEMP_FILE=`mktemp tmp_stats_${stage}_XXXXXXXX.txt` &&
-            usearch -fastq_stats $input.fastq -log \$TEMP_FILE &&
-            NUM_SEQS=`grep Recs \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[1])'` &&
-            MAX_LEN=`grep '^>=' \$TEMP_FILE | perl -n -e 'print((split /\\s+/)[1]);'` &&
-            MED_LEN=`grep '[5-9].\\..%\$' \$TEMP_FILE | perl -n -e '@arr=split/\\s+/; if (scalar @arr == 5) { print \$arr[1]; last; }'` &&
-            MIN_LEN=`grep '100\\.0%\$' \$TEMP_FILE | perl -e '\$len="?"; while (<>) { @arr=split /\\s+/; \$len=\$arr[1] if scalar(@arr)==5; }; print \$len'` &&
-            MAX_Q=`grep -A 2 ^ASCII \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[2])'` &&
-            MED_Q=`grep '[5-9].\\..%\$' \$TEMP_FILE | perl -e '\$len=""; while (<>) { @arr=split /\\s+/; if (scalar(@arr)==7 && not(\$len)) { \$len=\$arr[2]; last; } }; print \$len;'` &&
-            MIN_Q=`grep '100\\.0%\$' \$TEMP_FILE | tail -n 1 | perl -n -e 'print((split /\\s+/)[2])'` &&
-            NUM_N=`perl -n -e 'print \$_ if (\$.%4 == 2);' $input.fastq | grep -o N | wc -l` &&
-            echo -e "$stage\\t\$NUM_SEQS\\t\$MIN_LEN\\t\$MED_LEN\\t\$MAX_LEN\\t\$MIN_Q\\t\$MED_Q\\t$MAX_Q\\t$NUM_N" >> $LOG_FILE &&
+            fastq-stats -D $input.fastq > \$TEMP_FILE &&
+            NUM_SEQS=`grep "^reads" \$TEMP_FILE | cut -f 2` &&
+            MAX_LEN=`grep "^len" \$TEMP_FILE | egrep -v "mean|min|stdev" | cut -f 2` &&
+            AVG_LEN=`grep "^len mean" \$TEMP_FILE | cut -f 2` &&
+            AVG_LEN=`printf "%.1f" $AVG_LEN`
+            MIN_LEN=`grep "^len min" \$TEMP_FILE | cut -f 2` &&
+            MAX_Q=`grep "^qual max" \$TEMP_FILE | cut -f 2` &&
+            AVG_Q=`grep "^qual mean" \$TEMP_FILE | cut -f 2` &&
+            AVG_Q=`printf "%.1f" $AVG_Q`
+            MIN_Q=`grep "^qual min" \$TEMP_FILE | cut -f 2` &&
+            PERC_N=`grep "^%N" \$TEMP_FILE | cut -f 2` &&
+            echo -e "$stage\\t\$NUM_SEQS\\t\$MIN_LEN\\t\$AVG_LEN\\t\$MAX_LEN\\t\$MIN_Q\\t\$AVG_Q\\t$MAX_Q\\t$PERC_N" >> $LOG_FILE &&
             rm \$TEMP_FILE
          """
       }

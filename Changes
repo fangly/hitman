@@ -1,5 +1,9 @@
 Changelog for Hitman
 
+x.x xxxx-xx-xx
+ - Using Trimmomatic instead of FASTX Toolkit when possible to use multithreading
+ - Replaced USEARCH FASTQ statistics by that provided by ea-utils
+
 0.2 2014-03-18
  - Support for paired-end amplicon reads
  - Support for GZIP-compressed input files

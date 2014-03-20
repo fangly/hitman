@@ -25,6 +25,7 @@ Dependencies:
    sff2fastq
    pandaseq 2.5
    fastx_toolkit
+   trimmomatic 0.32
    ea-utils
    acacia
    usearch v7
