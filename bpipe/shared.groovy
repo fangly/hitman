@@ -211,17 +211,15 @@ merge_pairs = {
       produce(input.prefix+".pandaseq.fastq") {
          exec """
             echo "Merging paired-end reads" &&
-            module load pandaseq/2.5 &&
+            module load pandaseq &&
             SINGLES_FILE=`mktemp tmp_pandaseq_singles_XXXXXXXX.txt` &&
             STATS_FILE=`mktemp tmp_pandaseq_stats_XXXXXXXX.txt` &&
-            pandaseq -f $input1.fastq -r $input2.fastq -T $threads -F -w $output -g $STATS_FILE -u $SINGLES_FILE &&
-            NONMERGED=`grep -c '^>' $SINGLES_FILE` &&
+            pandaseq -f $input1.fastq -r $input2.fastq -T $threads -F -w $output -g $STATS_FILE -U $SINGLES_FILE &&
+            NONMERGED=`grep -c '^@' $SINGLES_FILE` &&
             echo "Approx. $NONMERGED pairs of reads could not be merged" &&
             rm \$SINGLES_FILE &&
             rm \$STATS_FILE
          """
-         // TODO: Use latest pandaseq (2.6) when bug is fixed: http://goo.gl/tbYVx2
-         //       Will need to count NONMERGED from FASTQ file instead of FASTA
       }
    }
    // Alternatives:
