@@ -368,8 +368,8 @@ rm_small_seqs = {
 }
 
 
-@Filter("trim_seqs")
-trim_seqs = {
+@Filter("crop_seqs")
+crop_seqs = {
    doc title: "Trim FASTQ sequences to the specified length",
        desc:  """Parameters:
                     'length', the trimming length""",
@@ -382,49 +382,83 @@ trim_seqs = {
 }
 
 
-@Filter("qual_trim_seqs")
-qual_trim_seqs = {
-   doc title: "Quality-based 3' end FASTQ sequence trimming",
+@Filter("trim_N")
+trim_N = {
+   doc title: "Trim sequence 3' end when encountering an N",
        desc:  """Parameters:
-                    'qual', the quality score at which to start 3' end trimming""",
+                    none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   // With 454, N gets the quality score 0, i.e. '!'
+   // With Illumina 1.8+, N gets the quality score 2, i.e. '#'
+   // To accomodate for both, we use a qual of 2
    // http://www.drive5.com/usearch/manual/fastq_filter.html
+   // This stage is parallelized with GNU Parallel.
    exec """
+      module load gnu_parallel &&
       module load usearch/7.0.1001 &&
-      usearch -fastq_filter $input.fastq -fastqout $output.fastq -fastq_truncqual $qual
+      cat $input.fastq | parallel -j $threads --block 10M -L 4 -k --pipe "
+         IN=\$(mktemp -u XXXXXX.{#}) && OUT=\$(mktemp -u XXXXXX.{#}) && cat > \\$IN &&
+         usearch -fastq_filter \\$IN -fastqout \\$OUT -fastq_truncqual 2 -quiet 1> /dev/null
+         && cat \\$OUT && rm \\$IN \\$OUT
+      " > $output.fastq
    """
 }
 
 
-//////////@Filter("qual_trim_seqs")
-//////////qual_trim_seqs = {
-//////////   doc title: "Quality-based 3' end FASTQ sequence trimming",
-//////////       desc:  """Parameters:
-//////////                    'qual', the quality score at which to start 3' end trimming""",
-//////////       constraints: "",
-//////////       author: "Florent Angly (florent.angly@gmail.com)"
-//////////   // https://github.com/najoshi/sickle
-//////////   exec """
-//////////      module load fastx_toolkit &&
-//////////      fastq_quality_trimmer -i $input.fastq -t $qual -l 0 -Q 33 -v -o $output.fastq 
-//////////   """
-//////////}
+@Filter("qual_trim_seqs")
+qual_trim_seqs = {
+   doc title: "Quality-based 3' end FASTQ sequence trimming",
+       desc:  """Starting from 5', trimming the 3' end starts at the first base
+                 with a quality score below the threshold. Parameters:
+                    'qual', the threshold quality score""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   // http://www.drive5.com/usearch/manual/fastq_filter.html
+   // This stage is parallelized with GNU Parallel.
+   exec """
+      module load gnu_parallel &&
+      module load usearch/7.0.1001 &&
+      cat $input.fastq | parallel -j $threads --block 10M -L 4 -k --pipe "
+         IN=\$(mktemp -u XXXXXX.{#}) && OUT=\$(mktemp -u XXXXXX.{#}) && cat > \\$IN &&
+         usearch -fastq_filter \\$IN -fastqout \\$OUT -fastq_truncqual $qual -quiet 1> /dev/null
+         && cat \\$OUT && rm \\$IN \\$OUT
+      " > $output.fastq
+   """
+}
 
 
-//////////@Filter("qual_trim_seqs")
-//////////qual_trim_seqs = {
-//////////   doc title: "Quality-based 3' end FASTQ sequence trimming",
-//////////       desc:  """Parameters:
-//////////                    'qual', the quality score at which to start 3' end trimming""",
-//////////       constraints: "",
-//////////       author: "Florent Angly (florent.angly@gmail.com)"
-//////////   // https://github.com/najoshi/sickle
-//////////   exec """
-//////////      module load trimmomatic &&
-//////////      trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq TRAILING:$qual  
-//////////   """
-//////////}
+//@Filter("qual_trim_seqs")
+//qual_trim_seqs = {
+//   doc title: "Quality-based 3' end FASTQ sequence trimming",
+//       desc:  """Starting from 5', trimming the 3' end starts at the first base
+//                 with a quality score below the threshold. Parameters:
+//                    'qual', the threshold quality score""",
+//       constraints: "",
+//       author: "Florent Angly (florent.angly@gmail.com)"
+//   // http://erne.sourceforge.net/manual.php
+//   exec """
+//      module load erne &&
+//      erne-filter --query1 $input.fastq --threads $threads --output-prefix $output.prefix --min-phred-value-mott $qual --force-standard --preserve-encoding --min-size 1 --min-mean-phred-quality 0 --errors 10000 &&
+//      mv ${output.prefix}_1.fastq $output
+//   """
+//}
+
+
+//@Filter("qual_trim_soft")
+//qual_trim_soft = {
+//   doc title: "Soft quality-based 3' end FASTQ sequence trimming",
+//       desc:  """Trimming starts from the 5' end and stop when quality score
+//                 score exceeds the threshold. Parameters:
+//                    'qual', the threshold quality score""",
+//       constraints: "",
+//       author: "Florent Angly (florent.angly@gmail.com)"
+//   // https://github.com/najoshi/sickle
+//   exec """
+//      module load trimmomatic &&
+//      trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq TRAILING:$qual
+//   """
+//}
 
 
 @Filter("ee_filter")
@@ -436,9 +470,15 @@ ee_filter = {
        author: "Florent Angly (florent.angly@gmail.com)"
    // The calculation of expected errors uses each individual quality score
    // http://www.drive5.com/usearch/manual/fastq_filter.html
+   // This stage is parallelized with GNU Parallel. 
    exec """
+      module load gnu_parallel &&
       module load usearch/7.0.1001 &&
-      usearch -fastq_filter $input.fastq -fastqout $output.fastq -fastq_maxee $ee
+      cat $input.fastq | parallel -j $threads --block 10M -L 4 -k --pipe "
+         IN=\$(mktemp -u XXXXXX.{#}) && OUT=\$(mktemp -u XXXXXX.{#}) && cat > \\$IN &&
+         usearch -fastq_filter \\$IN -fastqout \\$OUT -fastq_maxee $ee -quiet 1> /dev/null
+         && cat \\$OUT && rm \\$IN \\$OUT
+      " > $output.fastq
    """
 }
 
@@ -465,9 +505,9 @@ seq_stats = {
          exec """
             if [ ! -e $LOG_FILE ]; then
                echo "Creating log file $LOG_FILE" &&
-               echo -e "stage\\tnum_seq\\tmin_L\\tavg_L\\tmax_L\\tmin_Q\\tavg_Q\\tmax_Q\\tperc_N" > $LOG_FILE;
+               echo -e "stage\\tnum_seq\\tmin_L\\tavg_L\\tmax_L\\tmin_Q\\tavg_Q\\tmax_Q\\tnum_N" > $LOG_FILE;
             fi &&
-            echo "Appending stage $stage to log file $LOG_FILE" &&
+            echo "Appending stage '$stage' to log file $LOG_FILE" &&
             module load ea_utils &&
             TEMP_FILE=`mktemp tmp_stats_${stage}_XXXXXXXX.txt` &&
             fastq-stats -D $input.fastq > \$TEMP_FILE &&
@@ -481,7 +521,9 @@ seq_stats = {
             AVG_Q=`printf "%.1f" $AVG_Q`
             MIN_Q=`grep "^qual min" \$TEMP_FILE | cut -f 2` &&
             PERC_N=`grep "^%N" \$TEMP_FILE | cut -f 2` &&
-            echo -e "$stage\\t\$NUM_SEQS\\t\$MIN_LEN\\t\$AVG_LEN\\t\$MAX_LEN\\t\$MIN_Q\\t\$AVG_Q\\t$MAX_Q\\t$PERC_N" >> $LOG_FILE &&
+            TOT_BP=`grep "^total bases" \$TEMP_FILE | cut -f 2` &&
+            NUM_N=`echo "\$PERC_N * \$TOT_BP / 100" | bc` &&
+            echo -e "$stage\\t\$NUM_SEQS\\t\$MIN_LEN\\t\$AVG_LEN\\t\$MAX_LEN\\t\$MIN_Q\\t\$AVG_Q\\t$MAX_Q\\t$NUM_N" >> $LOG_FILE &&
             rm \$TEMP_FILE
          """
       }

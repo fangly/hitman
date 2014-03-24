@@ -21,14 +21,15 @@ The pipeline itself comprises three steps:
 Run these scripts with the --man flag to learn more about what they do.
 
 Dependencies:
-   bpipe
-   sff2fastq
+   bpipe 0.9.8.5
+   sff2fastq 0.8.0
    pandaseq 2.7
-   fastx_toolkit
+   fastx_toolkit 0.0.13.2
    trimmomatic 0.32
-   ea-utils
-   acacia
+   erne 1.4.2
+   ea-utils 1.1.2
+   acacia 1.50
    usearch v7
-   emboss
-   bio-community
+   emboss 6.6.0
+   bio-community 0.001005
 
