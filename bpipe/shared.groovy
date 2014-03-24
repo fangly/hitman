@@ -1,5 +1,7 @@
 // Shared modules for Bpipe
 
+// Block size to use for GNU Parallel
+PBLK=10M
 
 gunzip = {
    doc title: "Uncompress files compressed with GZIP",
@@ -164,8 +166,11 @@ fastq2fasta = {
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    exec """
+      module load gnu_parallel &&
       module load fastx_toolkit &&
-      fastq_to_fasta -i $input.fastq -n -Q 33 -o $output.fna
+      cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
+         fastq_to_fasta -n -Q 33
+      " > $output.fna
    """
 }
 
@@ -181,11 +186,17 @@ fasta2fastq = {
    // Usage: fasta_to_fastq.py input.fna
    // where the qual file must be named input.fna.qual
    exec """
-      fake_qual $input.fna &&
-      mv -f ${input.fna}.qual ${input.prefix}.qual &&
+      module load gnu_parallel &&
       module load biopython &&
-      fasta_to_fastq.py $input.fna &&
-      rm ${input.prefix}.qual
+      cat $input.fna | parallel -j $threads --block $PBLK -L 4 -k --pipe "
+         F=\$(mktemp -u XXXXXX.{#}) &&
+         cat > \\${F}.fna &&
+         fake_qual \\${F}.fna 1> /dev/null &&
+         mv -f \\${F}.fna.qual \\${F}.qual &&
+         fasta_to_fastq.py \\${F}.fna &&
+         cat \\${F}.fastq &&
+         rm \\${F}.fastq \\${F}.qual
+      " > $output.fastq
    """
 }
 
@@ -227,38 +238,6 @@ merge_pairs = {
    //   ea-utils fastq-join (see below)
    //   PEAR, FLASH, COPE, XORRO
 }
-
-
-//fastq_join = {
-//   doc title: "Merge pairs of FASTQ reads that overlap using fastq-join",
-//       desc:  """Skip if not exactly two fastq files were given. Parameters:
-//                    none""",
-//       constraints: "",
-//       author: "Florent Angly (florent.angly@gmail.com)"
-//   // fastq-join merges many fewer pairs than pandaseq, using default parameters
-//   def count = 0
-//   for ( file in inputs ) {
-//      if ( (file =~ /\.([^\.]*)$/)[0][1] == 'fastq' ) {
-//         count = count + 1
-//      }
-//   }
-//   if (count != 2) {
-//      exec """
-//         echo "Skipping paired-end merging"
-//      """
-//      forward input
-//   } else {
-//      filter("join") {
-//         exec """
-//            echo "Merging paired-end reads" &&
-//            module load ea_utils &&
-//            fastq-join $input1.fastq $input2.fastq -o ${input.prefix}.%.fastq &&
-//            NONMERGED=`grep -c '^@' ${input.prefix}.un1.fastq` &&
-//            echo "Approx. $NONMERGED pairs of reads could not be merged"
-//         """
-//      }
-//   }
-//}
 
 
 @Filter("rename_seqs")
@@ -313,8 +292,11 @@ acacia = {
       if (skip==1) {
          exec """
             echo "Skipping Acacia denoising" &&
+            module load gnu_parallel &&
             module load fastx_toolkit &&
-            fastq_to_fasta -i $input.fastq -n -Q 33 -o $output.fna
+            cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
+               fastq_to_fasta -n -Q 33
+            " > $output.fna
          """
       } else {
          exec """
@@ -393,14 +375,15 @@ trim_N = {
    // With Illumina 1.8+, N gets the quality score 2, i.e. '#'
    // To accomodate for both, we use a qual of 2
    // http://www.drive5.com/usearch/manual/fastq_filter.html
-   // This stage is parallelized with GNU Parallel.
    exec """
       module load gnu_parallel &&
       module load usearch/7.0.1001 &&
-      cat $input.fastq | parallel -j $threads --block 10M -L 4 -k --pipe "
-         IN=\$(mktemp -u XXXXXX.{#}) && OUT=\$(mktemp -u XXXXXX.{#}) && cat > \\$IN &&
-         usearch -fastq_filter \\$IN -fastqout \\$OUT -fastq_truncqual 2 -quiet 1> /dev/null
-         && cat \\$OUT && rm \\$IN \\$OUT
+      cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
+         F=\$(mktemp -u XXXXXX.{#}) &&
+         cat > \\${F}.in &&
+         usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_truncqual 2 -quiet 1> /dev/null &&
+         cat \\${F}.out &&
+         rm \\${F}.*
       " > $output.fastq
    """
 }
@@ -415,14 +398,15 @@ qual_trim_seqs = {
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    // http://www.drive5.com/usearch/manual/fastq_filter.html
-   // This stage is parallelized with GNU Parallel.
    exec """
       module load gnu_parallel &&
       module load usearch/7.0.1001 &&
-      cat $input.fastq | parallel -j $threads --block 10M -L 4 -k --pipe "
-         IN=\$(mktemp -u XXXXXX.{#}) && OUT=\$(mktemp -u XXXXXX.{#}) && cat > \\$IN &&
-         usearch -fastq_filter \\$IN -fastqout \\$OUT -fastq_truncqual $qual -quiet 1> /dev/null
-         && cat \\$OUT && rm \\$IN \\$OUT
+      cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
+         F=\$(mktemp -u XXXXXX.{#}) &&
+         cat > \\${F}.in &&
+         usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_truncqual $qual -quiet 1> /dev/null &&
+         cat \\${F}.out &&
+         rm \\${F}.*
       " > $output.fastq
    """
 }
@@ -470,14 +454,15 @@ ee_filter = {
        author: "Florent Angly (florent.angly@gmail.com)"
    // The calculation of expected errors uses each individual quality score
    // http://www.drive5.com/usearch/manual/fastq_filter.html
-   // This stage is parallelized with GNU Parallel. 
    exec """
       module load gnu_parallel &&
       module load usearch/7.0.1001 &&
-      cat $input.fastq | parallel -j $threads --block 10M -L 4 -k --pipe "
-         IN=\$(mktemp -u XXXXXX.{#}) && OUT=\$(mktemp -u XXXXXX.{#}) && cat > \\$IN &&
-         usearch -fastq_filter \\$IN -fastqout \\$OUT -fastq_maxee $ee -quiet 1> /dev/null
-         && cat \\$OUT && rm \\$IN \\$OUT
+      cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
+         F=\$(mktemp -u XXXXXX.{#}) &&
+         cat > \\${F}.in &&
+         usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_maxee $ee -quiet 1> /dev/null &&
+         cat \\${F}.out &&
+         rm \\${F}.*
       " > $output.fastq
    """
 }
