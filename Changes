@@ -1,9 +1,10 @@
 Changelog for Hitman
 
 x.x xxxx-xx-xx
- - Using Trimmomatic instead of FASTX Toolkit when possible to use multithreading
- - Replaced USEARCH FASTQ statistics by that provided by ea-utils for ease-of-use
- - Used GNU parallel to parallelize some trimming steps
+ - Using Trimmomatic instead of FASTX Toolkit and USEARCH for trimming to take
+   advantage of multithreading
+ - Using ea-utils instead of USEARCH for FASTQ statistics for ease-of-parsing
+ - Parallelized some steps using GNU Parallel
 
 0.2 2014-03-18
  - Support for paired-end amplicon reads

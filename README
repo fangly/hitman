@@ -26,7 +26,6 @@ Dependencies:
    pandaseq 2.7
    fastx_toolkit 0.0.13.2
    trimmomatic 0.32
-   erne 1.4.2
    ea-utils 1.1.2
    acacia 1.50
    usearch v7
