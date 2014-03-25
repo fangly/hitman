@@ -23,7 +23,7 @@ Run these scripts with the --man flag to learn more about what they do.
 Dependencies:
    bpipe 0.9.8.5
    sff2fastq 0.8.0
-   pandaseq 2.7
+   pear 0.9
    fastx_toolkit 0.0.13.2
    trimmomatic 0.32
    ea-utils 1.1.2

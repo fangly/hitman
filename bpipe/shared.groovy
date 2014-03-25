@@ -161,8 +161,8 @@ fasta2fastq = {
 
 
 merge_pairs = {
-   doc title: "Merge pairs of FASTQ reads that overlap using Pandaseq",
-       desc:  """Skip if not exactly two fastq files were given. Parameters:
+   doc title: "Merge pairs of FASTQ reads that overlap using PEAR",
+       desc:  """Skip if not exactly two FASTQ files were given. Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
@@ -178,26 +178,23 @@ merge_pairs = {
       """
       forward input
    } else {
-      produce(input.prefix+".pandaseq.fastq") {
+      produce(input.prefix+".merge_pairs.assembled.fastq") {
+         // http://www.exelixis-lab.org/web/software/pear
          exec """
             echo "Merging paired-end reads" &&
-            module load pandaseq &&
-            SINGLES_FILE=`mktemp tmp_pandaseq_singles_XXXXXXXX.txt` &&
-            STATS_FILE=`mktemp tmp_pandaseq_stats_XXXXXXXX.txt` &&
-            pandaseq -f $input1.fastq -r $input2.fastq -T $threads -F -w $output -g $STATS_FILE -U $SINGLES_FILE &&
-            NONMERGED=`grep -c '^@' $SINGLES_FILE` &&
-            echo "Approx. $NONMERGED pairs of reads could not be merged" &&
-            rm \$SINGLES_FILE &&
-            rm \$STATS_FILE
+            module load pear &&
+            pear -f $input1.fastq -r $input2.fastq -o ${input.prefix}.merge_pairs -p 0.01 -v 1 -b 33 -j $threads &&
+            NONMERGED=`grep -c '^@' ${input.prefix}.merge_pairs.unassembled.forward.fastq` &&
+            echo "Approx. $NONMERGED pairs of reads could not be merged"
          """
       }
    }
    // Alternatives:
+   //   Pandaseq, nice, but has more false-positives and quality scores are not as high
    //   USEARCH fastq_mergepairs: http://www.drive5.com/usearch/manual/fastq_mergepairs.html
    //   ea-utils fastq-join (see below)
-   //   PEAR, FLASH, COPE, XORRO
+   //   FLASH, COPE, XORRO
 }
-
 
 @Filter("rename_seqs")
 rename_seqs = {
