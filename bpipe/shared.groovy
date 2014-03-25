@@ -334,18 +334,11 @@ trunc_N = {
        author: "Florent Angly (florent.angly@gmail.com)"
    // With 454, N gets the quality score 0, i.e. '!'
    // With Illumina 1.8+, N gets the quality score 2, i.e. '#'
-   // To accomodate for both, we use a qual of 2
-   // http://www.drive5.com/usearch/manual/fastq_filter.html
+   // To accomodate for both, we keep only bases with a quality >= 3
+   // http://www.usadellab.org/cms/?page=trimmomatic
    exec """
-      module load gnu_parallel &&
-      module load usearch/7.0.1001 &&
-      cat $input.fastq | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
-         F=\$(mktemp -u tmp_XXXXXXXX.{#}) &&
-         cat > \\${F}.in &&
-         usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_truncqual 2 -quiet 1> /dev/null &&
-         cat \\${F}.out &&
-         rm \\${F}.*
-      " > $output.fastq
+      module load trimmomatic &&
+      trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq SLIDINGWINDOW:1:3
    """
 }
 
