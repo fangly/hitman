@@ -302,6 +302,7 @@ rm_small_seqs = {
                     'length', the minimum length to keep""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   // http://www.usadellab.org/cms/?page=trimmomatic
    exec """
       module load trimmomatic &&
       trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq MINLEN:$length
@@ -316,6 +317,7 @@ trunc_seqs = {
                     'length', the trimming length""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   // http://www.usadellab.org/cms/?page=trimmomatic
    exec """
       module load trimmomatic &&
       trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq CROP:$length
@@ -351,57 +353,21 @@ trunc_N = {
 @Filter("qual_trunc_seqs")
 qual_trunc_seqs = {
    doc title: "Quality-based 3' end FASTQ sequence truncation",
-       desc:  """Starting from 5', truncate the 3' end at the first base with a
-                 quality score at or below the threshold. Parameters:
+       desc:  """Going from 5' to 3', truncate the 3' end at the first base with
+                 a quality score below the threshold. All the remaining bases in
+                 will have a quality equal or highger than the threshold.
+                 Parameters:
                     'qual', the threshold quality score""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   // Trimmomatic is a good alternative to USEARCH fastq_truncqual
+   // http://www.usadellab.org/cms/?page=trimmomatic
    // http://www.drive5.com/usearch/manual/fastq_filter.html
    exec """
-      module load gnu_parallel &&
-      module load usearch/7.0.1001 &&
-      cat $input.fastq | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
-         F=\$(mktemp -u tmp_XXXXXXXX.{#}) &&
-         cat > \\${F}.in &&
-         usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_truncqual $qual -quiet 1> /dev/null &&
-         cat \\${F}.out &&
-         rm \\${F}.*
-      " > $output.fastq
+      module load trimmomatic &&
+      trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq SLIDINGWINDOW:1:$qual
    """
 }
-
-
-//@Filter("qual_trim_seqs")
-//qual_trim_seqs = {
-//   doc title: "Quality-based 3' end FASTQ sequence trimming",
-//       desc:  """Starting from 5', trimming the 3' end starts at the first base
-//                 with a quality score below the threshold. Parameters:
-//                    'qual', the threshold quality score""",
-//       constraints: "",
-//       author: "Florent Angly (florent.angly@gmail.com)"
-//   // http://erne.sourceforge.net/manual.php
-//   exec """
-//      module load erne &&
-//      erne-filter --query1 $input.fastq --threads $threads --output-prefix $output.prefix --min-phred-value-mott $qual --force-standard --preserve-encoding --min-size 1 --min-mean-phred-quality 0 --errors 10000 &&
-//      mv ${output.prefix}_1.fastq $output
-//   """
-//}
-
-
-//@Filter("qual_trim_soft")
-//qual_trim_soft = {
-//   doc title: "Soft quality-based 3' end FASTQ sequence trimming",
-//       desc:  """Trimming starts from the 5' end and stop when quality score
-//                 score exceeds the threshold. Parameters:
-//                    'qual', the threshold quality score""",
-//       constraints: "",
-//       author: "Florent Angly (florent.angly@gmail.com)"
-//   // https://github.com/najoshi/sickle
-//   exec """
-//      module load trimmomatic &&
-//      trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq TRAILING:$qual
-//   """
-//}
 
 
 @Filter("ee_filter")
