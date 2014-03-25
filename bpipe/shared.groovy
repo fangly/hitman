@@ -1,11 +1,13 @@
 // Shared modules for Bpipe
 
+
 // Block size to use for GNU Parallel
-PBLK=10M
+BLOCK="10M"
+
 
 gunzip = {
    doc title: "Uncompress files compressed with GZIP",
-       desc:  """This step is skipped is input is not compressed. Parameters:
+       desc:  """This step is skipped if input is not compressed. Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
@@ -30,49 +32,6 @@ gunzip = {
       // See code.google.com/p/bpipe/issues/detail?id=90
    }
 }
-
-
-//@Transform("mcf")
-//qmapping2mcf = {
-//   doc title: "Create a 454 MID mapping file from a QIIME mapping file",
-//       desc:  """Parameters:
-//                    none""",
-//       constraints: "",
-//       author: "Florent Angly (florent.angly@gmail.com)"
-//   exec """
-//      echo -e "custom_MIDs\n{" > $output.mcf &&
-//      cut -f 1,2 $input.qmapping | grep -v ^# | perl -p -e 's/^(.+)\t(.+)\$/mid = "\$1", "\$2", 2;/;' >> $output.mcf &&
-//      echo -e "}\n" >> $output.mcf
-//   """
-//}
-
-
-//@Transform("mapping")
-//qmapping2tmapping = {
-//   doc title: "Create a tabular mapping file (2 columns) from a QIIME mapping file",
-//       desc:  """Parameters:
-//                    none""",
-//       constraints: "",
-//       author: "Florent Angly (florent.angly@gmail.com)"
-//   exec """
-//      cut -f 1-2 $input.qmapping > $output.mapping
-//   """
-//}
-
-
-//split_sff_libraries = {
-//   doc title: "Split SFF libraries by MID using sfffile",
-//       desc:  """Uses an MCF mapping file. Parameters:
-//                    none""",
-//       constraints: "",
-//       author: "Florent Angly (florent.angly@gmail.com)"
-//   produce("${input.prefix}*.sff") {
-//      exec """
-//         module load 454 &&
-//         sfffile -s custom_MIDs -mcf $input.mcf -o $input.prefix $input.sff
-//      """
-//   }
-//}
 
 
 split_libraries = {
@@ -168,7 +127,7 @@ fastq2fasta = {
    exec """
       module load gnu_parallel &&
       module load fastx_toolkit &&
-      cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
+      cat $input.fastq | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
          fastq_to_fasta -n -Q 33
       " > $output.fna
    """
@@ -188,8 +147,8 @@ fasta2fastq = {
    exec """
       module load gnu_parallel &&
       module load biopython &&
-      cat $input.fna | parallel -j $threads --block $PBLK -L 4 -k --pipe "
-         F=\$(mktemp -u XXXXXX.{#}) &&
+      cat $input.fna | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
+         F=\$(mktemp -u tmp_XXXXXXXX.{#}) &&
          cat > \\${F}.fna &&
          fake_qual \\${F}.fna 1> /dev/null &&
          mv -f \\${F}.fna.qual \\${F}.qual &&
@@ -294,7 +253,7 @@ acacia = {
             echo "Skipping Acacia denoising" &&
             module load gnu_parallel &&
             module load fastx_toolkit &&
-            cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
+            cat $input.fastq | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
                fastq_to_fasta -n -Q 33
             " > $output.fna
          """
@@ -350,9 +309,9 @@ rm_small_seqs = {
 }
 
 
-@Filter("crop_seqs")
-crop_seqs = {
-   doc title: "Trim FASTQ sequences to the specified length",
+@Filter("trunc_seqs")
+trunc_seqs = {
+   doc title: "Truncate FASTQ sequences to the specified length",
        desc:  """Parameters:
                     'length', the trimming length""",
        constraints: "",
@@ -364,9 +323,9 @@ crop_seqs = {
 }
 
 
-@Filter("trim_N")
-trim_N = {
-   doc title: "Trim sequence 3' end when encountering an N",
+@Filter("trunc_N")
+trunc_N = {
+   doc title: "Truncate sequence 3' end when encountering an ambiguity",
        desc:  """Parameters:
                     none""",
        constraints: "",
@@ -378,8 +337,8 @@ trim_N = {
    exec """
       module load gnu_parallel &&
       module load usearch/7.0.1001 &&
-      cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
-         F=\$(mktemp -u XXXXXX.{#}) &&
+      cat $input.fastq | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
+         F=\$(mktemp -u tmp_XXXXXXXX.{#}) &&
          cat > \\${F}.in &&
          usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_truncqual 2 -quiet 1> /dev/null &&
          cat \\${F}.out &&
@@ -389,11 +348,11 @@ trim_N = {
 }
 
 
-@Filter("qual_trim_seqs")
-qual_trim_seqs = {
-   doc title: "Quality-based 3' end FASTQ sequence trimming",
-       desc:  """Starting from 5', trimming the 3' end starts at the first base
-                 with a quality score below the threshold. Parameters:
+@Filter("qual_trunc_seqs")
+qual_trunc_seqs = {
+   doc title: "Quality-based 3' end FASTQ sequence truncation",
+       desc:  """Starting from 5', truncate the 3' end at the first base with a
+                 quality score at or below the threshold. Parameters:
                     'qual', the threshold quality score""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
@@ -401,8 +360,8 @@ qual_trim_seqs = {
    exec """
       module load gnu_parallel &&
       module load usearch/7.0.1001 &&
-      cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
-         F=\$(mktemp -u XXXXXX.{#}) &&
+      cat $input.fastq | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
+         F=\$(mktemp -u tmp_XXXXXXXX.{#}) &&
          cat > \\${F}.in &&
          usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_truncqual $qual -quiet 1> /dev/null &&
          cat \\${F}.out &&
@@ -457,8 +416,8 @@ ee_filter = {
    exec """
       module load gnu_parallel &&
       module load usearch/7.0.1001 &&
-      cat $input.fastq | parallel -j $threads --block $PBLK -L 4 -k --pipe "
-         F=\$(mktemp -u XXXXXX.{#}) &&
+      cat $input.fastq | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
+         F=\$(mktemp -u tmp_XXXXXXXX.{#}) &&
          cat > \\${F}.in &&
          usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_maxee $ee -quiet 1> /dev/null &&
          cat \\${F}.out &&

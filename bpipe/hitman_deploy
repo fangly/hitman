@@ -49,15 +49,15 @@ Bpipe.run {
    seq_stats.using(stage:'initial', skip:SKIP_STATS) +
    rm_small_seqs.using(length:TRIM_LEN-10) +
    seq_stats.using(stage:'discard', skip:SKIP_STATS) +
-   //trim_N +
+   //trunc_N +
    //seq_stats.using(stage:'ntrim', skip:SKIP_STATS) +
    //rm_small_seqs.using(length:TRIM_LEN-10) +
    //seq_stats.using(stage:'ndiscard', skip:SKIP_STATS) +
-   qual_trim_seqs.using(qual:TRIM_QUAL) +
+   qual_trunc_seqs.using(qual:TRIM_QUAL) +
    seq_stats.using(stage:'qtrim', skip:SKIP_STATS) +
    rm_small_seqs.using(length:TRIM_LEN-10) +
    seq_stats.using(stage:'qdiscrd', skip:SKIP_STATS) +
-   crop_seqs.using(length:TRIM_LEN+10) +
+   trunc_seqs.using(length:TRIM_LEN+10) +
    seq_stats.using(stage:'trim', skip:SKIP_STATS) +
    ee_filter.using(ee:TRIM_LEN*EE_PERC/100) +
    seq_stats.using(stage:'eefilt', skip:SKIP_STATS) +
@@ -66,7 +66,7 @@ Bpipe.run {
    seq_stats.using(stage:'acacia', skip:SKIP_STATS) +
    rm_small_seqs.using(length:TRIM_LEN) +
    seq_stats.using(stage:'fdiscrd', skip:SKIP_STATS) +
-   crop_seqs.using(length:TRIM_LEN) +
+   trunc_seqs.using(length:TRIM_LEN) +
    seq_stats.using(stage:'ftrim', skip:SKIP_STATS) +
    fastq2fasta +
    final_report
