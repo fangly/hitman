@@ -73,7 +73,7 @@ split_libraries = {
    // Alternatives:
    // - QIIME split_libraries_fastq.py, but does a bunch of extra stuff that's not needed
    //   https://github.com/qiime/qiime/blob/master/scripts/split_libraries_fastq.py
-   // - FASTX_toolkit fastx_barcode_splitter, but does not support different MID lengths.
+   // - FASTX_toolkit fastx_barcode_splitter, but no support for variable-length MIDs.
    //   http://hannonlab.cshl.edu/fastx_toolkit/commandline.html#fastx_barcode_splitter_usage
    // - NGOpt splitBC, but does not support different MID lengths
    //   http://code.google.com/p/ngopt/source/browse/trunk/tools/splitbc
@@ -325,7 +325,8 @@ trunc_seqs = {
 @Filter("trunc_N")
 trunc_N = {
    doc title: "Truncate sequence 3' end when encountering an ambiguity",
-       desc:  """Parameters:
+       desc:  """Going from 5' to 3', truncate the 3' end at the first base that
+                 is ambiguous (N). Parameters:
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
