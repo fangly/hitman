@@ -648,7 +648,10 @@ usearch_global = {
    def id = perc / 100
    exec """
       module load usearch/7.0.1001 &&
-      usearch -usearch_global $input.otus -db $input.fna -id $id -threads $threads -strand plus -blast6out $output
+      usearch -usearch_global $input.otus -db $input.fna -id $id -threads $threads -strand plus -blast6out $output &&
+      if [ ! -s "$output" ]; then
+         echo "WARNING: No similarities were found! There might be an issue..." 1>&2;
+      fi
    """
    // -maxhits (default 0; i.e. ignored)
    //    This indicates the maximum number of hits written to the output files.
@@ -662,6 +665,40 @@ usearch_global = {
 }
 
 
+@Transform("primers")
+orient_primers = {
+   doc title: "Find out which of the given primers is forward and reverse",
+       desc:  """Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bioperl &&
+      TEMP_FILE=`mktemp tmp_orient_primers_XXXXXXXX.fna` &&
+      extract_first_seqs --input $input1.fna --number 1 --output \$TEMP_FILE &&
+      PRIMER1=`extract_first_seqs --input $input2.fna --number 1 | convert_seq_format --format raw` &&
+      echo "Primer 1: \$PRIMER1" &&
+      PRIMER2=`extract_last_seqs --input $input2.fna --number 1 | convert_seq_format --format raw` &&
+      echo "Primer 2: \$PRIMER2" &&
+      TEST1=`extract_amplicons -i \$TEMP_FILE -f \$PRIMER1 -m bioperl 2> /dev/null` &&
+      TEST2=`extract_amplicons -i \$TEMP_FILE -f \$PRIMER2 -m bioperl 2> /dev/null` &&
+      FWD="Primer 1" &&
+      if [[ ! -z \$TEST1 ]]; then
+         : ;
+      elif [[ ! -z \$TEST2 ]]; then
+         FWD="Primer 2" &&
+         read PRIMER1 PRIMER2 <<<"\${PRIMER2} \${PRIMER1}";
+      else
+         echo "Error: Primers do not match amplicons" 1>&2 &&
+         exit 1;
+      fi &&
+      echo ${FWD}" has forward orientation" &&
+      echo -e ">fwd\\n\${PRIMER1}\\n>rev\\n\${PRIMER2}" > $output.primers &&
+      rm \$TEMP_FILE
+   """
+}
+
+
 extract_amplicons = {
    doc title: "Given primers, extract amplicons from a file of sequences, trim them and save the results globally",
        desc:  """The first primer should be the primer from which sequencing starts. Parameters:
@@ -672,9 +709,9 @@ extract_amplicons = {
       module load bioperl &&
       TRIM_LEN=`extract_first_seqs --input $input.fna --number 1 | get_seq_length | cut -f 2` &&
       echo "Trim length: \$TRIM_LEN" &&
-      FWD_PRIMER=`extract_first_seqs --input $input2.fna --number 1 | convert_seq_format --format raw` &&
+      FWD_PRIMER=`extract_first_seqs --input $input.primers --number 1 | convert_seq_format --format raw` &&
       echo "Fwd primer: \$FWD_PRIMER" &&
-      REV_PRIMER=`extract_last_seqs --input $input2.fna --number 1 | convert_seq_format --format raw` &&
+      REV_PRIMER=`extract_last_seqs --input $input.primers --number 1 | convert_seq_format --format raw` &&
       echo "Rev primer: \$REV_PRIMER" &&
       TAXO_DB=$db &&
       TRIMMED_TAXO_DB=\${TAXO_DB%.*}_trimmed_\${FWD_PRIMER}_\${TRIM_LEN}_bp.fna &&

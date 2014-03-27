@@ -18,12 +18,10 @@ Dependencies:
 
 Three types of input files are necessary:
 1/ SFF (or FASTQ) files containing regular or paired-end amplicon reads (can be
-   gziped)
-2/ FASTA file containing the primers used. The primer from which sequencing
-   proceeded must be first in the file.
+   gzipped)
+2/ FASTA file containing the primers used
 3/ If the sequencing run was multiplexed, a 2-column tabular mapping files
-   indicating the multiplex identifiers (MIDs)
-   used for each sample.
+   indicating the multiplex identifiers (MIDs) used for each sample
 
 The pipeline itself comprises three steps:
 1/ hitman_hire: Collect amplicon reads to analyze from SFF/FASTQ files.
@@ -33,14 +31,18 @@ The pipeline itself comprises three steps:
 Run these scripts with the --man flag to learn more about what they do.
 
 A typical 454 GS-FLX Ti processing looks like this:
-   hitman_hire    --dir 01-hire/    --input Gasket67.sff --mapping Gasket67.mapping 
-   hitman_deploy  --dir 02-deploy/  --input 01-hire/*cat_files.fastq 
-   hitman_execute --dir 03-execute/ --input 02-deploy/*.fna --primers primers.fna
+   hitman_hire    --dir 01-hire/    --input Gasket67.sff --mapping Gasket67.mapping
+   ln -s 01-hire/*cat_files.fastq seqs.fastq
+   hitman_deploy  --dir 02-deploy/  --input seqs.fastq
+   ln -s 02-deploy/*trunc_seqs.fna seqs_qa.fna
+   hitman_execute --dir 03-execute/ --input seqs_qa.fna --primers primers.fna
 
 For typical Illumina MiSeq processing (with paired-end reads and no mapping file),
 we can skip the Acacia homopolymer denoising step and increase rarefaction depth
 from 1,000 (by default) to 10,000 reads:
    hitman_hire    --dir 01-hire/    --five Sample1.R1.fasta.gz Sample2.R1.fasta.gz --three Sample1.R2.fasta.gz Sample2.R2.fasta.gz
-   hitman_deploy  --dir 02-deploy/  --input 01-hire/*cat_files.fastq -p SKIP_DENOISING=1
-   hitman_execute --dir 03-execute/ --input 02-deploy/*.fna --primers primers.fna -p RAREFACTION_DEPTH=10000
+   ln -s 01-hire/*cat_files.fastq seqs.fastq
+   hitman_deploy  --dir 02-deploy/  --input seqs.fastq -p SKIP_DENOISING=1
+   ln -s 02-deploy/*trunc_seqs.fna seqs_qa.fna
+   hitman_execute --dir 03-execute/ --input seqs_qa.fna --primers primers.fna -p RAREFACTION_DEPTH=10000
 

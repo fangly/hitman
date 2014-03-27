@@ -21,9 +21,8 @@ hitman_deploy step. The file must have a *.fna extension.
 =item -q <primers> | --primers <primers>
 
 Input FASTA file containing the two PCR primers used, following the IUPAC
-convention for degenerate residues. The first primer in the file must be the
-primer from which the read sequencing starts. The file must have a *.fna
-extension.
+convention for degenerate residues. The primers need not be in a specific order,
+but the file must have a *.fna extension.
 
 =for Euclid:
    primers.type: readable
