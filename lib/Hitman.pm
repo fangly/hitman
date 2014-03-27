@@ -42,7 +42,7 @@ necessary. Default: dir.default
 
 =head1 VERSION
 
-0.2
+0.3
 
 =head1 AUTHOR
 
@@ -148,6 +148,7 @@ sub run_hitman {
    ### TODO: DESTROY method to clean up:
    ###   bpipe stop
    ###   rm -rf .bpipe/ commandlog.txt
+   ###   rm tmp_*
 
    return 1;
 }

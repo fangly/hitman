@@ -1,6 +1,6 @@
 Changelog for Hitman
 
-x.x xxxx-xx-xx
+0.3 2014-03-27
  - Primer orientation is now detected automatically
  - Using Trimmomatic instead of FASTX Toolkit and USEARCH for trimming to take
    advantage of multithreading
