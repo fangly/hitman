@@ -551,21 +551,6 @@ desc2tax = {
 }
 
 
-@filter("rarefy")
-rarefy = {
-   doc title: "Rarefy microbial profiles",
-       desc:  """Parameters:
-                    'num', number of reads to rarefy to (e.g. 1000)""",
-       constraints: "",
-       author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load bio-community &&
-      bc_rarefy -if $input -nr inf -ss $num -op $output.prefix
-   """
-}
-
-
-
 @Transform("otus")
 dereplicate = {
    doc title: "Collapse duplicate reads, record their abundance and sort them by abundance",
@@ -727,6 +712,34 @@ extract_amplicons = {
 }
 
 
+@filter("rarefy")
+rarefy = {
+   doc title: "Rarefy microbial profiles",
+       desc:  """Parameters:
+                    'num', number of reads to rarefy to (e.g. 1000)""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bio-community &&
+      bc_rarefy -if $input -nr inf -ss $num -op $output.prefix
+   """
+}
+
+
+@filter("rm_otus")
+rm_otus = {
+   doc title: "Remove given OTUs",
+       desc:  """Parameters:
+                    'str', name of OTUs to remove (e.g. "*bacteria Eukaryota")""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   exec """
+      module load bio-community &&
+      bc_manage_members -if $input -en $str -op $output.prefix
+   """
+}
+
+
 @Filter("copyrighter")
 copyrighter = {
    doc title: "Perform GCN bias correction using CopyRighter",
@@ -750,3 +763,16 @@ copyrighter = {
 }
 
 
+tax_summary = {
+   doc title: "Make a taxonomic summary and group taxa <1% in all samples together",
+       desc:  """Parameters:
+                    'lvl', level of taxonomic summary, e.g. 6 for Greengenes genera""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   produce("${input.prefix}.summary*.*") {
+      exec """
+         module load bio-community &&
+         bc_summarize -if $input -cr 0 -md 0 -rl 1 -tl $lvl -op ${input.prefix}.summary
+      """
+   }
+}

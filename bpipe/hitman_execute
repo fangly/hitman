@@ -36,16 +36,16 @@ TAXO_MIN_IDENTITY=90.0
 //TAXO_MIN_IDENTITY=95.0
 //Rule of thumb: >97% indicates the same species, >95% the same genus
 
-// Samples to merge
+// Name of samples to merge (case-insensitive, wildcard allowed)
 MERGE_SAMPLES=""
 
-// OTUs to remove (case-insensitive)
-REMOVE_OTUS="Eukaryota"
+// OTUs to remove (case-insensitive, wildcard allowed)
+REMOVE_OTUS="Eukaryota*"
 
 // Rarefaction depth (number of reads per sample)
 RAREFACTION_DEPTH=1000
 
-// Taxonomic level at which to summarize (e.g. 6 for Greengenes genus level)
+// Taxonomic level for the summary (e.g. 6 for Greengenes genus level)
 TAXO_LVL=6
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,10 +89,11 @@ Bpipe.run {
    otu_mapping.using(perc:OTU_MIN_IDENTITY) +
    [make_otu_table, assign_taxo_global] +
    add_taxonomy +
-   //// TODO: remove_samples + merge_samples + remove_euks
+   //// TODO: remove_samples + merge_samples +
+   rm_otus.using(str:REMOVE_OTUS) +
    rarefy.using(num:RAREFACTION_DEPTH) +
    copyrighter.using(db:GCN_DB) +
-   //// TODO: tax_summary.using(lvl:TAXO_LVL) +
+   tax_summary.using(lvl:TAXO_LVL) +
    //// TODO: heatmap
    final_report
 }
