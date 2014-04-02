@@ -6,6 +6,7 @@ datasets.
 
 Dependencies:
    bpipe 0.9.8.5
+   pigz 2.1.6
    sff2fastq 0.8.0
    pear 0.9
    fastx_toolkit 0.0.13.2

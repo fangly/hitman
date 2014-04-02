@@ -6,7 +6,7 @@ BLOCK="10M"
 
 
 gunzip = {
-   doc title: "Uncompress files compressed with GZIP",
+   doc title: "Uncompress GZIP files",
        desc:  """This step is skipped if input is not compressed. Parameters:
                     none""",
        constraints: "",
@@ -18,18 +18,48 @@ gunzip = {
       produce(out) {
          exec """
             echo "Uncompressing GZIP file" &&
-            gunzip -c $input.gz > $out
+            pigz -d -p $threads -c $input.gz > $out
          """
       }
    } else {
       produce(out) {
          exec """
             echo "Skipping GZIP decompression" &&
-            cp $input $output
+            cp $input $out
          """
       }
       // TODO: When bug #90 is fixed, replace by: forward input
       // See code.google.com/p/bpipe/issues/detail?id=90
+   }
+}
+
+
+gzip = {
+   doc title: "Compress GZIP files",
+       desc:  """This step is skipped if input is compressed. Parameters:
+                    none""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   def ext = (input =~ /\.([^\.]*)$/)[0][1]
+   def out = output.prefix
+   if (ext == "gz") {
+      produce(out) {
+         exec """
+            echo "Skipping GZIP compression" &&
+            cp $input $out
+         """
+      }
+      // TODO: When bug #90 is fixed, replace by: forward input
+      // See code.google.com/p/bpipe/issues/detail?id=90
+
+   } else {
+      out = out + ".gz"
+      produce(out) {
+         exec """
+            echo "Compressing to GZIP file" &&
+            pigz -p $threads -c $input > $out
+         """
+      }
    }
 }
 
