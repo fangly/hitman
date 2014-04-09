@@ -31,10 +31,9 @@ TAXO_DB="/srv/db/merged_gg_silva/gg201210_silva115/merged_gg_silva_99clust_seqs.
 // CopyRighter gene copy number database (skip if database is 0)
 GCN_DB="/srv/db/copyrighter/ssu_img40_gg201210_merged.txt"
 
-// Minimum identity percent for the taxonomic assignment
-TAXO_MIN_IDENTITY=90.0
-//TAXO_MIN_IDENTITY=95.0
-//Rule of thumb: >97% indicates the same species, >95% the same genus
+// Minimum identity percent for taxonomic assignments
+TAXO_MIN_IDENTITY=95.0
+//Rule of thumb: >97% for the same species, >95% for the same genus
 
 // Name of samples to merge (case-insensitive, wildcard allowed)
 MERGE_SAMPLES=""
