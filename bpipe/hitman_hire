@@ -8,6 +8,9 @@
 //    bpipe run hitman_hire G67.sff G67.mapping G72.sff G72.mapping
 //    bpipe run hitman_hire G67.R1.fastq G67.R2.fastq G72.R1.fastq G72.R2.fastq
 
+// Flag to keep forward reads of read pairs that could not be merged
+KEEP_UNMERGED=1
+
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -15,10 +18,10 @@ about title: "hitman_hire - Prepare amplicons for analysis"
 
 
 Bpipe.run {
-   "%"       * [ gunzip + sff2fastq    ] +
-   "%.*"     * [ merge_pairs           ] +
-   "%.*"     * [ split_libraries       ] +
-   "%.fastq" * [ rename_seqs           ] +
+   "%"       * [ gunzip + sff2fastq                                ] +
+   "%.*"     * [ merge_pairs.using(keep_fwd_singles:KEEP_UNMERGED) ] +
+   "%.*"     * [ split_libraries                                   ] +
+   "%.fastq" * [ rename_seqs                                       ] +
    cat_files + final_report
 }
 

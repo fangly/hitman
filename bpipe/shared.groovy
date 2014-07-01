@@ -193,7 +193,8 @@ fasta2fastq = {
 merge_pairs = {
    doc title: "Merge pairs of FASTQ reads that overlap using PEAR",
        desc:  """Skip if not exactly two FASTQ files were given. Parameters:
-                    none""",
+                    'keep_fwd_singles', boolean to keep forward reads that could not be merged (default: 0)
+                    'keep_rev_singles', boolean to keep reverse reads that could not be merged (default: 0)""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    def count = 0
@@ -215,12 +216,20 @@ merge_pairs = {
             module load pear &&
             pear -f $input1.fastq -r $input2.fastq -o ${input.prefix}.merge_pairs -p 0.01 -v 1 -b 33 -j $threads &&
             NONMERGED=`grep -c '^@' ${input.prefix}.merge_pairs.unassembled.forward.fastq` &&
-            echo "Approx. $NONMERGED pairs of reads could not be merged"
+            echo "Approx. $NONMERGED pairs of reads could not be merged" &&
+            if [ "$keep_fwd_singles" = "1" ]; then
+               echo "Adding forward singles";
+               cat ${input.prefix}.merge_pairs.unassembled.forward.fastq >> ${input.prefix}.merge_pairs.assembled.fastq;
+            fi &&
+            if [ "$keep_rev_singles" = "1" ]; then
+               echo "Adding forward singles";
+               cat ${input.prefix}.merge_pairs.unassembled.forward.fastq >> ${input.prefix}.merge_pairs.assembled.fastq;
+            fi
          """
       }
    }
    // Alternatives:
-   //   Pandaseq, nice, but has more false-positives and quality scores are not as high
+   //   Pandaseq, nice, but has more false-positives and different type of quality scores (lower)
    //   USEARCH fastq_mergepairs: http://www.drive5.com/usearch/manual/fastq_mergepairs.html
    //   ea-utils fastq-join (see below)
    //   FLASH, COPE, XORRO
