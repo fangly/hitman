@@ -39,7 +39,7 @@ TAXO_MIN_IDENTITY=95.0
 MERGE_SAMPLES=""
 
 // OTUs to remove (case-insensitive, wildcard allowed)
-REMOVE_OTUS="Eukaryota*"
+REMOVE_OTUS="Eukaryota* *Chloroplast*"
 
 // Rarefaction depth (number of reads per sample)
 RAREFACTION_DEPTH=1000

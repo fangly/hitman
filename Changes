@@ -1,5 +1,11 @@
 Changelog for Hitman
 
+0.4 2014-04-09
+ - Changed default values:
+    * quality truncation increased to Q13 (5%)
+    * minimum identity for taxonomic assignments increased to 95% (genus-level)
+    * removing OTUs assigned to chloroplasts
+
 0.3 2014-03-27
  - Primer orientation is now detected automatically
  - Using Trimmomatic instead of FASTX Toolkit and USEARCH for trimming to take
