@@ -274,6 +274,7 @@ final_report = {
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    println("Outputs are : "+inputs)
+   //println(inputs.dump())
 }
 
 
@@ -408,18 +409,19 @@ clip_adapters = {
        author: "Florent Angly (florent.angly@gmail.com)"
    // http://www.usadellab.org/cms/?page=trimmomatic
    // EA-util's fastq-mcf could be an alternative
-   if (adapters == "") {
-      exec """
-         echo "Skipping adapter clipping"
-      """
-      forward input
-   } else {
+   adapters = adapters.toString() == "true" ? "" : adapters   // Groovy issue 93
+   if (adapters) {
       filter("clip_adapters") {
          exec """
             module load trimmomatic &&
             trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq ILLUMINACLIP:$adapters:2:30:10
          """
       }
+   } else {
+      exec """
+         echo "Skipping adapter clipping"
+      """
+      forward input
    }
 }
 
@@ -789,17 +791,26 @@ rarefy = {
 }
 
 
-@filter("rm_otus")
-rm_otus = {
-   doc title: "Remove given OTUs",
+rm_named_otus = {
+   doc title: "Remove OTUs that match the given names",
        desc:  """Parameters:
                     'str', name of OTUs to remove (e.g. "*bacteria Eukaryota")""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   exec """
-      module load bio-community &&
-      bc_manage_members -if $input -en $str -op $output.prefix
-   """
+   str = str.toString() == "true" ? "" : str   // Groovy issue 93
+   if (str) {
+      filter("rm_named_otus") {
+         exec """
+            module load bio-community &&
+            bc_manage_members -if $input -en $str -op $output.prefix
+         """
+      }
+   } else {
+      exec """
+         echo "Skipping removal of named OTUs"
+      """
+      forward input
+   }
 }
 
 

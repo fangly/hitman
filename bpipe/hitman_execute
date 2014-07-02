@@ -89,7 +89,7 @@ Bpipe.run {
    [make_otu_table, assign_taxo_global] +
    add_taxonomy +
    //// TODO: remove_samples + merge_samples +
-   rm_otus.using(str:REMOVE_OTUS) +
+   rm_named_otus.using(str:REMOVE_OTUS) +
    rarefy.using(num:RAREFACTION_DEPTH) +
    copyrighter.using(db:GCN_DB) +
    tax_summary.using(lvl:TAXO_LVL) +
