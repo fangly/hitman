@@ -401,12 +401,13 @@ qual_trunc_seqs = {
 
 
 clip_adapters = {
-   doc title: "Cut adapter and other illumina-specific sequences from the reads",
+   doc title: "Cut library adapters from the reads using TRIMMOMATIC",
        desc:  """Parameters:
                     'adapters', a FASTA file containing the adapters""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    // http://www.usadellab.org/cms/?page=trimmomatic
+   // EA-util's fastq-mcf could be an alternative
    if (adapters == "") {
       exec """
          echo "Skipping adapter clipping"
