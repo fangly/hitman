@@ -284,7 +284,7 @@ acacia = {
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
    produce(input.prefix+".acacia.fna") {
-      if (skip==1) {
+      if (skip == 1) {
          exec """
             echo "Skipping Acacia denoising" &&
             module load gnu_parallel &&
@@ -400,6 +400,29 @@ qual_trunc_seqs = {
 }
 
 
+clip_adapters = {
+   doc title: "Cut adapter and other illumina-specific sequences from the reads",
+       desc:  """Parameters:
+                    'adapters', a FASTA file containing the adapters""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   // http://www.usadellab.org/cms/?page=trimmomatic
+   if (adapters == "") {
+      exec """
+         echo "Skipping adapter clipping"
+      """
+      forward input
+   } else {
+      filter("clip_adapters") {
+         exec """
+            module load trimmomatic &&
+            trimmomatic SE -threads $threads -phred33 $input.fastq $output.fastq ILLUMINACLIP:$adapters:2:30:10
+         """
+      }
+   }
+}
+
+
 @Filter("ee_filter")
 ee_filter = {
    doc title: "Remove FASTQ reads with too many expected errors",
@@ -438,7 +461,7 @@ seq_stats = {
          echo "Skipping computation of sequence statistics"
       """
    } else {
-      if(LOG_FILE == "") {
+      if (LOG_FILE == "") {
          LOG_FILE=output.stats
       }
       produce(LOG_FILE) {

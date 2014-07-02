@@ -2,6 +2,7 @@ Changelog for Hitman
 
 x.x
  - Keep forward reads from pairs that could not be merged
+ - Optional step to remove sequencing library adapters
 
 0.4 2014-04-09
  - Changed default values:
