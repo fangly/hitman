@@ -131,7 +131,7 @@ sub run_hitman {
    $ENV{'BPIPE_LIB'} = groovy_dir();
 
    # Prepare Bpipe command, e.g.:
-   #   bpipe run -p QUAL_TRUNC=13 -d out_dir pipeline.groovy infile1 infile2
+   #   bpipe run -y -p QUAL_TRUNC=13 -d out_dir pipeline.groovy infile1 infile2
    my @cmd = (
       'bpipe', 'run',
       @params,

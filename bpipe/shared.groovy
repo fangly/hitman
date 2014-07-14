@@ -184,7 +184,7 @@ fasta2fastq = {
          mv -f \\${F}.fna.qual \\${F}.qual &&
          fasta_to_fastq.py \\${F}.fna &&
          cat \\${F}.fastq &&
-         rm \\${F}.fastq \\${F}.qual
+         rm \\${F}.fna \\${F}.fastq \\${F}.qual
       " > $output.fastq
    """
 }

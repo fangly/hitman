@@ -19,7 +19,8 @@ required for files compressed with GZIP. Each file is assumed to contain reads
 from a single sample, unless --mapping is provided.
 
 =for Euclid:
-   seqs.type: readable
+   seqs.type: readable, seqs =~ m/\.(sff|fastq)(\.gz)?$/
+   seqs.type.error: <seqs> must be a file ending in *.sff, *.fastq or *.gz
 
 =back
 
@@ -32,6 +33,10 @@ If paired-end sequencing was used, the files given to --five should be the
 file names for the 5' and 3' end must be of the form <basename>.<pair>.<extension>,
 e.g. "Sample1.R1.fastq" and "Sample1.R2.fastq".
 
+=for Euclid:
+   three.type: readable, three =~ m/\.(sff|fastq)(\.gz)?$/
+   three.type.error: <three> must be a file ending in *.sff, *.fastq or *.gz
+
 =item -m <mapping>... | --mapping <mapping>...
 
 If multiplex sequencing was used, multiple samples are present in each --input
@@ -43,7 +48,8 @@ sequence file given to --input, e.g. "Run67.mapping" for reads given in
 "Run67.sff".
 
 =for Euclid:
-   mapping.type: readable
+   mapping.type: readable, mapping =~ m/\.mapping$/
+   mapping.type.error: <mapping> must be a file ending in *.mapping
 
 =back
 

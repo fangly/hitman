@@ -16,7 +16,8 @@ Input FASTQ file containing the sequences from the previous step, hitman_hire.
 The file must have a *.fastq extension.
 
 =for Euclid:
-   seqs.type: readable
+   seqs.type: readable, seqs =~ m/\.fastq$/
+   seqs.type.error: <seqs> must be a file ending in *.fastq
 
 =back
 

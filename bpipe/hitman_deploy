@@ -13,7 +13,7 @@
 // Flag to skip the computation of sequence statistics
 SKIP_STATS=0
 
-// FASTA file of the Illumina adapters to clip (your own TRIMMOMATIC-formatted file, or one of the TRIMMOMATIC files: NexteraPE-PE.fa  TruSeq2-PE.fa  TruSeq2-SE.fa  TruSeq3-PE-2.fa  TruSeq3-PE.fa  TruSeq3-SE.fa)
+// FASTA file of the adapters to clip (e.g. /path/to/trimmomatic/adapters/NexteraPE-PE.fa)
 LIB_ADAPTERS=""
 
 // Quality score below which 3' end read truncation should start (going from 5' to 3')
@@ -31,8 +31,7 @@ SKIP_DENOISING=0
 
 // Read trimming/discard length
 TRIM_LEN=250
-// 250bp captures the whole V6-V7 region using the ACE 926F-1392R primers (V6-V8)
-// TODO: Not true, since we sequence from the REVERSE primer!
+// 250bp captures the whole V6-V7 region using the 926F-1392R primers (V6-V8)
 
 ////////////////////////////////////////////////////////////////////////////////
 
