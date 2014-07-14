@@ -178,7 +178,7 @@ fasta2fastq = {
       module load gnu_parallel &&
       module load biopython &&
       cat $input.fna | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
-         F=\$(mktemp -u tmp_XXXXXXXX.{#}) &&
+         F=\$(mktemp -u tmp_convert_XXXXXXXX.{#}) &&
          cat > \\${F}.fna &&
          fake_qual \\${F}.fna 1> /dev/null &&
          mv -f \\${F}.fna.qual \\${F}.qual &&
@@ -439,7 +439,7 @@ ee_filter = {
       module load gnu_parallel &&
       module load usearch/7.0.1001 &&
       cat $input.fastq | parallel -j $threads --block $BLOCK -L 4 -k --pipe "
-         F=\$(mktemp -u tmp_XXXXXXXX.{#}) &&
+         F=\$(mktemp -u tmp_ee_filter_XXXXXXXX.{#}) &&
          cat > \\${F}.in &&
          usearch -fastq_filter \\${F}.in -fastqout \\${F}.out -fastq_maxee $ee -quiet 1> /dev/null &&
          cat \\${F}.out &&
@@ -725,10 +725,10 @@ orient_primers = {
    exec """
       module load bioperl &&
       TEMP_FILE=`mktemp tmp_orient_primers_XXXXXXXX.fna` &&
-      extract_first_seqs --input $input1.fna --number 1 --output \$TEMP_FILE &&
-      PRIMER1=`extract_first_seqs --input $input2.fna --number 1 | convert_seq_format --format raw` &&
+      extract_first_seqs --input $input.fna --number 1 --output \$TEMP_FILE &&
+      PRIMER1=`extract_first_seqs --input $input.primers --number 1 | convert_seq_format --format raw` &&
       echo "Primer 1: \$PRIMER1" &&
-      PRIMER2=`extract_last_seqs --input $input2.fna --number 1 | convert_seq_format --format raw` &&
+      PRIMER2=`extract_last_seqs --input $input.primers --number 1 | convert_seq_format --format raw` &&
       echo "Primer 2: \$PRIMER2" &&
       TEST1=`extract_amplicons -i \$TEMP_FILE -f \$PRIMER1 -m bioperl 2> /dev/null` &&
       TEST2=`extract_amplicons -i \$TEMP_FILE -f \$PRIMER2 -m bioperl 2> /dev/null` &&

@@ -1,5 +1,9 @@
 Changelog for Hitman
 
+x.x 
+ - hitman_execute can now use high-fidelity reads for OTU determination, and assign
+   regular reads to these OTUs
+
 0.5 2014-07-02
  - Keep forward reads from pairs that could not be merged
  - Optional step to remove sequencing library adapters

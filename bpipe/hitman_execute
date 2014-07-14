@@ -3,14 +3,15 @@
 // Cluster and annotate OTUs, make a rarefied, copy-corrected microbial profile and graph
 
 // Input is:
-// 1/ *.fna: FASTA reads, clean, trimmed to the same length, and named by sample
-// 2/ *.fna: FASTA file containing the two primers used (in no specific order)
+// 1/ *hifi.fna: Very clean FASTA reads, all trimmed to the same length (for OTU determination)
+// 2/ *reads.fna: Clean FASTA reads, trimmed to the same length, and named by sample
+// 3/ *.primers: FASTA file containing the two PCR primers used (in no specific order)
 
-// Usage example: bpipe run pipeline_analyze.groovy sediments_QA.fna primers.fna
+// Usage example: bpipe run hitman_execute sediments_QA.hifi.fna sediments_QA.reads.fna 926F-1392R.primers
 
 // Options:
 
-// Flag to prevent singleton sequences to constitute an OTU
+// Flag to allow singleton sequences to constitute an OTU
 SKIP_RM_SINGLETONS=0
 
 // Minimum identity percent for OTU clustering
@@ -84,9 +85,9 @@ add_taxonomy = segment {
 
 
 Bpipe.run {
-   uparse_otu +
-   otu_mapping.using(perc:OTU_MIN_IDENTITY) +
-   [make_otu_table, assign_taxo_global] +
+   "hifi.fna" * [ uparse_otu ] +
+   "reads.fna" * [ otu_mapping.using(perc:OTU_MIN_IDENTITY) ] +
+   [ make_otu_table, assign_taxo_global ] +
    add_taxonomy +
    //// TODO: remove_samples + merge_samples +
    rm_named_otus.using(str:REMOVE_OTUS) +

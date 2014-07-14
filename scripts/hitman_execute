@@ -12,20 +12,39 @@ the input cleaned and trimmed FASTA sequences to produce a BIOM file.
 
 =item -i <seqs> | --input <seqs>
 
-Input FASTA file containing the cleaned, trimmed sequences from the previous
-hitman_deploy step. The file must have a *.fna extension.
+Input FASTA file containing the trimmed, renamed sequences from the previous
+hitman_deploy step. The file must have a *.reads.fna extension.
 
 =for Euclid:
-   seqs.type: readable
+   seqs.type: readable, seqs =~ m/\.reads\.fna$/
+   seqs.type.error: <seqs> must be a file ending in *.reads.fna
 
 =item -q <primers> | --primers <primers>
 
 Input FASTA file containing the two PCR primers used, following the IUPAC
 convention for degenerate residues. The primers need not be in a specific order,
-but the file must have a *.fna extension.
+but the file must have a *.primers extension.
 
 =for Euclid:
-   primers.type: readable
+   primers.type: readable, primers =~ m/\.primer.*$/
+   primers.type.error: <primers> must be a file with a *.primers extension
+
+=back
+
+=head2 OPTIONAL ARGUMENTS
+
+=over
+
+=item -j <hifi_seqs> | --input2 <hifi_seqs>
+
+Input FASTA file of very clean, trimmed sequences from the previous
+hitman_deploy step. These sequences are for OTU determination only. The file
+name must end with *.hifi.fna. Default: use the same file as <read_seqs>
+
+=for Euclid:
+   hifi_seqs.type: readable, hifi_seqs =~ m/\.hifi\.fna$/
+   hifi_seqs.default: ''
+   hifi_seqs.type.error: <hifi_seqs> must be a file ending in *.hifi.fna
 
 =back
 
@@ -39,7 +58,7 @@ use lib "$RealBin/../lib";
 use Hitman;
 
 Hitman::parse_args();
-my $inputs = [ $ARGV{'--input'}, $ARGV{'--primers'} ];
+my $inputs = [ $ARGV{'--input2'} || $ARGV{'--input'}, $ARGV{'--input'}, $ARGV{'--primers'} ];
 Hitman::run_hitman( $inputs );
 
 exit;
