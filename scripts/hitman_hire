@@ -47,8 +47,10 @@ mapping files, make sure that they have the same basename as the corresponding
 sequence file given to --input, e.g. "Run67.mapping" for reads given in
 "Run67.sff".
 
+Important: B<Avoid using '.' in sample names!>
+
 =for Euclid:
-   mapping.type: readable, mapping =~ m/\.mapping$/
+   mapping.type: readable, mapping =~ m/\.map.ing$/
    mapping.type.error: <mapping> must be a file ending in *.mapping
 
 =back

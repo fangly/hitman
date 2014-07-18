@@ -26,7 +26,7 @@ convention for degenerate residues. The primers need not be in a specific order,
 but the file must have a *.primers extension.
 
 =for Euclid:
-   primers.type: readable, primers =~ m/\.primer.*$/
+   primers.type: readable, primers =~ m/\.pr.mers*$/
    primers.type.error: <primers> must be a file with a *.primers extension
 
 =back

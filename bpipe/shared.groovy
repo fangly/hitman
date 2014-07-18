@@ -122,6 +122,7 @@ sff2fastq = {
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   // sff2fastq: https://github.com/indraniel/sff2fastq
    def fmt = null
    for ( file in inputs ) {
       def ext = (file =~ /\.([^\.]*)$/)[0][1]
