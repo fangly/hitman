@@ -723,10 +723,11 @@ orient_primers = {
                     none""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
+   // Check orientation of >1 read to not be affected by sequencing errors
    exec """
       module load bioperl &&
       TEMP_FILE=`mktemp tmp_orient_primers_XXXXXXXX.fna` &&
-      extract_first_seqs --input $input.fna --number 1 --output \$TEMP_FILE &&
+      extract_first_seqs --input $input.fna --number 10 --output \$TEMP_FILE &&
       PRIMER1=`extract_first_seqs --input $input.primers --number 1 | convert_seq_format --format raw` &&
       echo "Primer 1: \$PRIMER1" &&
       PRIMER2=`extract_last_seqs --input $input.primers --number 1 | convert_seq_format --format raw` &&
@@ -793,7 +794,7 @@ rarefy = {
 }
 
 
-rm_named_otus = {
+rm_otus = {
    doc title: "Remove OTUs that match the given names",
        desc:  """Parameters:
                     'str', name of OTUs to remove (e.g. "*bacteria Eukaryota")""",
@@ -801,7 +802,7 @@ rm_named_otus = {
        author: "Florent Angly (florent.angly@gmail.com)"
    str = str.toString() == "true" ? "" : str   // Groovy issue 93
    if (str) {
-      filter("rm_named_otus") {
+      filter("rm_otus") {
          exec """
             module load bio-community &&
             bc_manage_members -if $input -en $str -op $output.prefix
