@@ -758,6 +758,7 @@ extract_amplicons = {
        author: "Florent Angly (florent.angly@gmail.com)"
    exec """
       module load bioperl &&
+      module load emboss &&
       TRIM_LEN=`extract_first_seqs --input $input.fna --number 1 | get_seq_length | cut -f 2` &&
       echo "Trim length: \$TRIM_LEN" &&
       FWD_PRIMER=`extract_first_seqs --input $input.primers --number 1 | convert_seq_format --format raw` &&
