@@ -800,17 +800,63 @@ rm_otus = {
                     'str', name of OTUs to remove (e.g. "*bacteria Eukaryota")""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   str = str.toString() == "true" ? "" : str   // Groovy issue 93
-   if (str) {
+   rm_otus = str.toString() == "true" ? "" : str   // Groovy issue 93
+   if (rm_otus) {
       filter("rm_otus") {
          exec """
             module load bio-community &&
-            bc_manage_members -if $input -en $str -op $output.prefix
+            bc_manage_members -if $input -en $rm_otus -op $output.prefix
          """
       }
    } else {
       exec """
          echo "Skipping removal of named OTUs"
+      """
+      forward input
+   }
+}
+
+
+rm_samples = {
+   doc title: "Remove samples that match the given names",
+       desc:  """Parameters:
+                    'str', name of samples to remove (e.g. "*pelagic benthic")""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   rm_samples = str.toString() == "true" ? "" : str   // Groovy issue 93
+   if (rm_samples) {
+      filter("rm_samples") {
+         exec """
+            module load bio-community &&
+            bc_manage_samples -if $input -en $rm_samples -op $output.prefix
+         """
+      }
+   } else {
+      exec """
+         echo "Skipping removal of named samples"
+      """
+      forward input
+   }
+}
+
+
+cat_samples = {
+   doc title: "Concatenate samples that match the given names",
+       desc:  """Parameters:
+                    'str', name of samples to concatenate (e.g. "-mn A B -mn C D E")""",
+       constraints: "",
+       author: "Florent Angly (florent.angly@gmail.com)"
+   cat_samples = str.toString() == "true" ? "" : str   // Groovy issue 93
+   if (cat_samples) {
+      filter("cat_samples") {
+         exec """
+            module load bio-community &&
+            bc_manage_samples -if $input -op $output.prefix -rm first $cat_samples
+         """
+      }
+   } else {
+      exec """
+         echo "Skipping removal of named samples"
       """
       forward input
    }

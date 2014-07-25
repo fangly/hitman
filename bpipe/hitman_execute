@@ -42,6 +42,12 @@ MERGE_SAMPLES=""
 // OTUs to remove (case-insensitive, wildcard allowed)
 REMOVE_OTUS="Eukaryota* *Chloroplast*"
 
+// Samples to remove (case-insensitive, wildcard allowed)
+REMOVE_SAMPLES=""
+
+// Samples to concatenate (e.g. "-mn A B -mn C D E", case-insensitive, wildcard allowed)
+CONCAT_SAMPLES=""
+
 // Rarefaction depth (number of reads per sample)
 RAREFACTION_DEPTH=1000
 
@@ -89,8 +95,9 @@ Bpipe.run {
    "reads.fna" * [ otu_mapping.using(perc:OTU_MIN_IDENTITY) ] +
    [ make_otu_table, assign_taxo_global ] +
    add_taxonomy +
-   //// TODO: remove_samples + merge_samples +
-   rm_named_otus.using(str:REMOVE_OTUS) +
+   rm_samples.using(str:REMOVE_SAMPLES) +
+   cat_samples.using(str:CONCAT_SAMPLES) +
+   rm_otus.using(str:REMOVE_OTUS) +
    rarefy.using(num:RAREFACTION_DEPTH) +
    copyrighter.using(db:GCN_DB) +
    tax_summary.using(lvl:TAXO_LVL) +
