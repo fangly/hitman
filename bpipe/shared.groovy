@@ -870,11 +870,12 @@ copyrighter = {
                     'db', gene copy number database (skip if db is '')""",
        constraints: "",
        author: "Florent Angly (florent.angly@gmail.com)"
-   if (db) {
+   copyrighter = db.toString() == "true" ? "" : db   // Groovy issue 93
+   if (copyrighter) {
       exec """
          echo "Running CopyRighter" &&
          module load copyrighter &&
-         copyrighter -i $input -d $db -o $output -l id -v
+         copyrighter -i $input -d $copyrighter -o $output -l id -v
       """
    } else {
       exec """
