@@ -95,7 +95,7 @@ split_libraries = {
          exec """
             echo "Splitting libraries by MID" &&
             module load ea_utils &&
-            fastq-multx -B $input.mapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0 &&
+            fastq-multx -B $input.mapping $input.fastq -o ${input.prefix}.%.fastq -b -m 0 -d 1 &&
             rm ${input.prefix}.unmatched.fastq
          """
       }

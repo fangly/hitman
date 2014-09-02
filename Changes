@@ -2,6 +2,8 @@ Changelog for Hitman
 
 0.x
  - Remove or merge requested samples
+ - When splitting libraries, require a distance of only 1 instead of 2 to the
+   next best matching MID
 
 0.6 2014-07-14
  - hitman_execute can now use high-fidelity reads for OTU determination, and assign

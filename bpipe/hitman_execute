@@ -95,8 +95,8 @@ Bpipe.run {
    "reads.fna" * [ otu_mapping.using(perc:OTU_MIN_IDENTITY) ] +
    [ make_otu_table, assign_taxo_global ] +
    add_taxonomy +
-   rm_samples.using(str:REMOVE_SAMPLES) +
    cat_samples.using(str:CONCAT_SAMPLES) +
+   rm_samples.using(str:REMOVE_SAMPLES) +
    rm_otus.using(str:REMOVE_OTUS) +
    rarefy.using(num:RAREFACTION_DEPTH) +
    copyrighter.using(db:GCN_DB) +
