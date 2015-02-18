@@ -223,8 +223,8 @@ merge_pairs = {
                cat ${input.prefix}.merge_pairs.unassembled.forward.fastq >> ${input.prefix}.merge_pairs.assembled.fastq;
             fi &&
             if [ "$keep_rev_singles" = "1" ]; then
-               echo "Adding forward singles";
-               cat ${input.prefix}.merge_pairs.unassembled.forward.fastq >> ${input.prefix}.merge_pairs.assembled.fastq;
+               echo "Adding reverse singles";
+               cat ${input.prefix}.merge_pairs.unassembled.reverse.fastq >> ${input.prefix}.merge_pairs.assembled.fastq;
             fi
          """
       }
