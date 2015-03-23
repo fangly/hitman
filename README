@@ -8,6 +8,9 @@ datasets.
 INSTALLATION
 
 Please install these dependencies first:
+   perl
+   Getopt::Euclid perl module
+   IPC::System::Simple perl module
    bpipe 0.9.8.5
    pigz 2.1.6
    sff2fastq 0.8.0
@@ -19,11 +22,7 @@ Please install these dependencies first:
    usearch v7
    emboss 6.6.0
    bio-community 0.001005
-
-In addition, the scripts in the ./contrib/ folder require:
-   perl
-   Bioperl
-   Getopt::Euclid perl module
+   bioperl
 
 Then add the ./scripts/ and ./contrib/ folder into your PATH environment
 variable.
