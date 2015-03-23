@@ -1,9 +1,11 @@
 Changelog for Hitman
 
-0.x
+0.7 2015-03-23
+ - Fix for keeping unmerged reverse sequences
  - Remove or merge requested samples
  - When splitting libraries, require a distance of only 1 instead of 2 to the
    next best matching MID
+ - More robust primer orientation step
 
 0.6 2014-07-14
  - hitman_execute can now use high-fidelity reads for OTU determination, and assign
