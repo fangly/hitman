@@ -1,0 +1,111 @@
+#! /usr/bin/env perl
+
+use strict;
+use warnings;
+use Getopt::Euclid;
+use Bio::SeqIO;
+use Bio::SeqIO::MultiFile;
+
+=head1 NAME
+
+convert_seq_format - Format DNA/RNA/AA sequences into another format
+
+=head1 VERSION
+
+0.1
+
+=head1 DESCRIPTION
+
+Given one or several files containing sequences, reformat the sequences into the
+specified format.
+
+=head1 OPTIONAL ARGUMENTS
+
+=over
+
+=item --input <input>...
+
+One or several files containing the sequences to process (FASTA, FASTQ, ...).
+The sequences are read from STDIN if --input is not provided. The input format
+is auto-detected.
+
+=for Euclid:
+   input.type: readable
+
+=item --format <format>
+
+Desired output format. Default: format.default
+
+=for Euclid:
+   format.default: 'fasta'
+
+=item --output <output>
+
+Instead of displaying the sequences on screen, write them into the specified file.
+
+=for Euclid:
+   output.type: writable
+
+=back
+
+=head1 DEPENDENCIES
+
+=over 
+
+=item *
+
+Getopt::Euclid
+
+=item *
+
+Bioperl
+
+=back
+
+=head1 AUTHOR
+
+Florent Angly <florent.angly@gmail.com>
+
+=head1 LICENSE
+
+GPLv3
+
+=cut
+
+convert_seq_format( $ARGV{'--input'}, $ARGV{'--output'}, $ARGV{'--format'} );
+exit;
+
+
+sub convert_seq_format {
+   my ($inputs, $output, $format) = @_;
+   my ($in, $out) = initialize_io($inputs, $output, $format);
+   while (my $seq = $in->next_seq) {
+      $out->write_seq($seq);
+   }
+   $in->close;
+   $out->close;
+   return 1;
+}
+
+
+sub initialize_io {
+   my ($inputs, $output, $format) = @_;
+   my $in;
+   if ($inputs) {
+      $in = Bio::SeqIO::MultiFile->new( -files=>$inputs );
+   } else {
+      $in = Bio::SeqIO->new(            -fh   =>\*STDIN );
+   }
+   if (not defined $format) {
+      # Autodetect format
+      $format = $in->format || die "Error: Could not determine format of input\n";
+   }
+   my $out;
+   if (defined $output) {
+      $out = Bio::SeqIO->new( -file=>">$output", -format=>$format, -flush=>0 );
+   } else {
+      $out = Bio::SeqIO->new( -fh  =>\*STDOUT  , -format=>$format, -flush=>0 );
+   }
+   return $in, $out;
+}
+

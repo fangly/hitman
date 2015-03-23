@@ -1,0 +1,136 @@
+#! /usr/bin/env perl
+
+use strict;
+use warnings;
+use Getopt::Euclid;
+use Bio::SeqIO;
+use Bio::SeqIO::MultiFile;
+
+
+=head1 NAME
+
+extract_last_seqs - Get the last sequences of those provided
+
+=head1 VERSION
+
+0.1
+
+=head1 DESCRIPTION
+
+Given a file of sequences, return only the last few. The exact number of
+sequences to return can be specified
+
+=head1 OPTIONAL ARGUMENTS
+
+=over
+
+=item --input <input>...
+
+File containing the sequences to filter (FASTA, FASTQ, ...). The sequences are
+read from STDIN if they are not provided with --input.
+
+=for Euclid:
+   input.type: readable
+
+=item --number <number>
+
+Report the last <number> sequences. Default: number.default
+
+=for Euclid:
+   number.type: integer >= 0
+   number.default: 10
+
+=item --output <output>
+
+Instead of displaying the sequences on screen, write them into the specified file.
+
+=for Euclid:
+   output.type: writable
+
+=back
+
+=head1 DEPENDENCIES
+
+=over 
+
+=item *
+
+Getopt::Euclid
+
+=item *
+
+Bioperl
+
+=back
+
+=head1 AUTHOR
+
+Florent Angly <florent.angly@gmail.com>
+
+=head1 LICENSE
+
+GPLv3
+
+=cut
+
+
+extract_last_seqs( $ARGV{'--input' }, $ARGV{'--number'}, $ARGV{'--output'} );
+exit;
+
+
+sub extract_last_seqs {
+   my ($inputs, $number, $output) = @_;
+   my ($in, $out) = initialize_io($inputs, $output);
+   if ($number !~ m/^\+/) {
+      $number = number_from_start($number, $in);
+      # this exhausted $in, so rewind it
+      ($in, $out) = initialize_io($inputs, $output);
+   }
+   extract_from_start($number, $in, $out);
+   $out->close;
+   $in->close;
+   return 1;
+}
+
+
+sub number_from_start {
+   my ($number, $in, $inputs,) = @_;
+   my $num_seqs;
+   $num_seqs++ while $in->next_seq;
+   return '+'.($num_seqs - $number + 1);
+}
+
+
+sub extract_from_start {
+   my ($number, $in, $out) = @_;
+   my $count = 0;
+   while ( my $seq = $in->next_seq ) {
+      $count++;
+      if ($number <= $count) {
+         $out->write_seq($seq);
+      }
+   }
+   return 1;
+}
+
+
+sub initialize_io {
+   my ($inputs, $output, $format) = @_;
+   my $in;
+   if ($inputs) {
+      $in = Bio::SeqIO::MultiFile->new( -files=>$inputs );
+   } else {
+      $in = Bio::SeqIO->new(            -fh   =>\*STDIN );
+   }
+   if (not defined $format) {
+      # Autodetect format
+      $format = $in->format || die "Error: Could not determine format of input\n";
+   }
+   my $out;
+   if (defined $output) {
+      $out = Bio::SeqIO->new( -file=>">$output", -format=>$format, -flush=>0 );
+   } else {
+      $out = Bio::SeqIO->new( -fh  =>\*STDOUT  , -format=>$format, -flush=>0 );
+   }
+   return $in, $out;
+}

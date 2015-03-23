@@ -1,0 +1,32 @@
+#! /usr/bin/env perl
+
+# Adapted by Florent Angly, 99% based on a script by Dana Willner
+
+use strict;
+use warnings;
+use File::Basename;
+
+my $usage   = "Usage: ".basename($0)." <FASTA_FILE>\nGenerate fake quality scores given sequences in a FASTA file. The results are written in a file with the same name as the input file and a '.qual' extension.\n";
+my $infile  = $ARGV[0] or die "Error: Need to provide an input FASTA file\n$usage";
+my $outfile = $infile.'.qual';
+print "Writing to $outfile\n";
+open my $in , '<', $infile  or die "Error: Could not read file '$infile'\n$!\n";
+open my $out, '>', $outfile or die "Error: Could not write file '$outfile'\n$!\n";
+
+my $dummyqual = 30;
+
+while (<$in>) {
+    if(/\>/){
+        print $out $_;
+    } else {
+        chomp;
+        my $seqlen = length $_;
+        for (1 .. $seqlen) {
+            print $out "$dummyqual ";
+        }
+        print $out "\n";
+    }
+}
+
+close $in;
+close $out;

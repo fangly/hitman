@@ -1,0 +1,411 @@
+#! /usr/bin/env perl
+
+# Copyright 2013-2014 Florent Angly
+# You may distribute this module under the terms of the GPLv3
+
+
+=head1 NAME
+
+extract_amplicons - Trim a set of reference sequences to the specified primer region
+
+=head1 VERSION
+
+0.6
+
+=head1 REQUIRED ARGUMENTS
+
+=over
+
+=item -i <in>
+
+Reference sequences (FASTA, FASTQ, ...), e.g., full-length 16S rRNA genes that
+you want to trim to a given variable region.
+
+=for Euclid:
+   in.type: readable
+
+=item -f <fwd>
+
+String for the forward primer sequence. You can use the IUPAC convention to
+specify a degenerate primer, e.g., 'GTTTYARYC'. A warning is emitted if the
+primer set does not match all the reference sequences.
+
+=for Euclid:
+   fwd.type: string
+
+=back
+
+=head1 OPTIONAL ARGUMENTS
+
+=over
+
+=item -r <rev>
+
+Reverse primer sequence. This can be omitted if you use the <method> BioPerl.
+When omitted, the region of the reference sequence between the forward primer
+and the end of the sequence is extracted.
+
+=for Euclid:
+   rev.type: string
+
+=item -m <method>
+
+Use Bioperl's Bio::Tools::AmpliconSearch or EMBOSS's primersearch to do the work.
+The 'emboss' method is faster than the 'bioperl' method: 1min45s VS 2min46s for
+~220,000 full-length 16S rRNA gene sequences. Default: method.default
+
+=for Euclid:
+   method.default: 'emboss'
+
+=item -t <trim>
+
+Trim the extracted sequences to the given length (in bp). You can omit the <rev>
+option if you specify <trim>, but it is recommended to use both. If the sequence
+is smaller than the specified trim size, it is discarded and a warning is issued.
+
+=for Euclid:
+   trim.type: integer > 0
+
+=item -e <errors>
+
+Number of errors (mismatches) allowed when matching the primers against the
+reference sequence (only available when using the <method> EMBOSS). Internally,
+this number of errors is converted into a percentage of mismatches, relative to
+the shortest of the two primers. If your primers differ significantly in length,
+this means that a larger number of errors than you required may be allowed for
+the longest primer (but see also <threshold>). Note that using <errors>
+introduces a performance penalty: 2min5s with 0 errors VS 1min45s with 1 error
+using ~220,000 full-length 16S rRNA gene sequences. Default: errors.default
+
+=for Euclid:
+   errors.type: integer >= 0
+   errors.default: 0
+
+=item -w <wrt>
+
+The default for this option is 'short', meaning that any errors specified are
+relative to the shortest primer. Using 'long' implies that the maximum number of
+errors allowed is relative to the longest primer, and is thus more conservative
+(allows fewer matches).
+
+=for Euclid:
+   wrt.type: /short|long/
+   wrt.default: 'short'
+
+=item -s <silent>
+
+Use this option to disable warnings.
+
+=for Euclid:
+   silent.type: integer, silent == 0 || silent == 1
+   silent.default: 0
+
+=item -o <out>
+
+Instead of displaying results on stdout, save them in the file of the given name.
+
+=for Euclid:
+  out.type: writable
+
+=item -p <pos>
+
+Choose where in the to write the position of the extracted amplicon: 'id' or
+'desc'. By default, amplicon position will be appended to the description/
+comment field of the output sequences and sequence ID will be the same as that
+of the corresponding input reference sequence. However, if you expect multiple
+amplicons per reference sequence, you should put amplicon position in the ID to
+avoid having duplicate sequence IDs. Default: pos.default
+
+=for Euclid:
+   pos.type: /id|desc/
+   pos.default: 'desc'
+
+=back
+
+=head1 AUTHOR
+
+Florent Angly <florent.angly@gmail.com>
+
+=head1 BUGS
+
+All complex software has bugs lurking in it, and this program is no exception.
+If you find a bug, please contact the author.
+
+=head1 COPYRIGHT
+
+Copyright 2013-2014 Florent Angly
+
+extract_amplicons is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+extract_amplicons is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with Copyrighter.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut
+
+
+use strict;
+use warnings;
+use Getopt::Euclid qw(:minimal_keys);
+use Bio::SeqIO;
+use Bio::PrimarySeq;
+use Bio::Tools::AmpliconSearch;
+use Bio::Factory::EMBOSS;
+use Bio::DB::Fasta;
+use File::Temp qw/tempfile/;
+use List::Util qw/min max/;
+use POSIX qw(ceil);
+
+extract_amplicons($ARGV{i}, $ARGV{f}, $ARGV{r}, $ARGV{t}, $ARGV{o}, $ARGV{p},
+   $ARGV{s}, $ARGV{m}, $ARGV{e}, $ARGV{w});
+exit;
+
+
+sub extract_amplicons {
+   my ($in_file, $fwd_str, $rev_str, $trim_len, $out_file, $where, $silent,
+      $method, $num_errors, $wrt) = @_;
+   # Prepare output
+   my $fmt = Bio::SeqIO->_guess_format($in_file);
+   my $out;
+   if (defined $out_file) {
+      $out = Bio::SeqIO->new(-file=>'>'.$out_file, -format=>$fmt, -flush=>0);
+   } else {
+      $out = Bio::SeqIO->new(-fh  =>\*STDOUT     , -format=>$fmt, -flush=>0);
+   }
+   # Locate and extract amplicons
+   my ($nof_seqs_wo_matches, $nof_seqs);
+   if ($method eq 'bioperl') {
+      ($nof_seqs_wo_matches, $nof_seqs) = extract_amplicons_bioperl($in_file,
+         $fwd_str, $rev_str, $trim_len, $out, $where, $silent);
+   } else {
+      if (not defined $rev_str) {
+         die "Error: Need a reverse primer when using the EMBOSS method\n";
+      }
+      my @lengths = (length $fwd_str, length $rev_str);
+      my $length = ($wrt eq 'short') ? min @lengths : max @lengths;
+      my $perc_errors = ceil( $num_errors * 100 / $length );
+      ($nof_seqs_wo_matches, $nof_seqs) = extract_amplicons_emboss($in_file,
+         $fwd_str, $rev_str, $trim_len, $out, $where, $silent, $perc_errors);
+   }
+   $out->close;
+   if ( ($nof_seqs_wo_matches > 0) && (not $silent) ) {
+      warn "Warn: $nof_seqs_wo_matches reference sequences (out of $nof_seqs) ".
+         "were not matched by the primer set\n";
+   }
+   return 1;
+}
+
+
+#--------- The BioPerl way ---------#
+
+
+sub extract_amplicons_bioperl {
+   my ($in_file, $fwd_str, $rev_str, $trim_len, $out, $where, $silent) = @_;
+   my $search = Bio::Tools::AmpliconSearch->new(
+      -fwd_primer => Bio::PrimarySeq->new( -id=>'fwd', -seq=>$fwd_str ),
+   );
+   if (defined $rev_str) {
+      $search->rev_primer(
+         Bio::PrimarySeq->new( -id=>'rev', -seq=>$rev_str )
+      );
+   }
+   my $in = Bio::SeqIO->new( -file => $in_file );
+   my ($nof_seqs_wo_matches, $nof_seqs) = (0, 0);
+   my $prev_id;
+   while (my $templ = $in->next_seq) {
+      $nof_seqs++;
+      $search->template($templ);
+      my $found = 0;
+      while (my $amp = $search->next_amplicon) { # Bio::SeqFeature::Amplicon obj
+         $found++;
+         finish_processing_seq($amp->seq, $amp->start, $amp->end, $amp->strand,
+            $trim_len, $out, $where, $silent, $prev_id);
+         $prev_id = $amp->seq->id;
+      }
+      if ( (not $found) && (not $silent) ) {
+         warn "Warn: Primer set did not match reference sequence '".$templ->id."'\n";
+         $nof_seqs_wo_matches++;
+         next;
+      }
+   }
+   $in->close;
+   return ($nof_seqs_wo_matches, $nof_seqs);
+}
+
+
+sub finish_processing_seq {
+   # Trim sequence, give it a proper name and write it to file
+   # Return 0 if sequence was too short to write, 1 otherwise
+   my ($seq, $start, $end, $strand, $trim_len, $out, $where, $silent, $prev_id) = @_;
+   if (defined $trim_len) {
+      if ($trim_len > $seq->length) {
+         if (not $silent) {
+            warn "Warn: Amplicon '".join(" ", amplicon_pos($seq, $start, $end,
+               $strand, $where))."' was shorter than the trim length ($trim_len)".
+               " and thus discarded\n";
+         }
+         return 0;
+      }
+      $seq = $seq->trunc(1, $trim_len);
+      $end = $start + $trim_len - 1;
+   }
+   my ($id, $desc) = amplicon_pos($seq, $start, $end, $strand, $where);
+   if (not $seq->isa('Bio::PrimarySeq::Fasta')) {
+      # Attribute meaningful ID and description
+      $seq->id($id);
+      $seq->desc($desc);
+   } else {
+      # Bio::DB::Fasta sequences are read-only... work around this by copying
+      $seq = Bio::PrimarySeq->new(
+         -id   => $id,
+         -desc => $desc,
+         -seq  => $seq->seq,
+      );
+   }
+   $out->write_seq($seq);
+   if ( (defined $prev_id) && ($prev_id eq $id) && (not $silent) ) {
+      warn "Warn: Multiple amplicons were obtained from reference sequence '$id'".
+         " and will be given the same ID. Set <pos> to 'id' to avoid this.\n";
+   }
+   return 1;
+}
+
+
+sub amplicon_pos {
+   my ($seq, $start, $end, $strand, $where) = @_;
+   my $id   = $seq->id;
+   my $desc = $seq->desc;
+   my $loc  = "start=$start/end=$end/strand=$strand";
+   if ($where eq 'id') {
+      # Add amplicon position to ID. Leave description alone.
+      $id .= '/'.$loc;
+   } else {
+      $desc .= ' ' if $desc;
+      $desc .= $loc;
+   }
+   return $id, $desc;
+}
+
+
+#--------- The EMBOSS way ---------#
+
+
+sub extract_amplicons_emboss {
+   my ($in_file, $fwd_str, $rev_str, $trim_len, $out, $where, $silent, $perc_errors) = @_;
+   my $db = Bio::DB::Fasta->new($in_file, -reindex => 1, -clean => 1);
+   my $amplicon_file = (tempfile)[1];
+   run_primersearch($fwd_str, $rev_str, $in_file, $amplicon_file, $perc_errors);
+   my ($nof_seqs_wo_matches, $nof_seqs) = parse_primersearch_results($fwd_str,
+      $amplicon_file, $trim_len, $db, $out, $where, $silent);
+   unlink $amplicon_file;
+   ###close $db->close;
+   return $nof_seqs_wo_matches, $nof_seqs;
+}
+
+
+sub parse_primersearch_results {
+   my ($fwd, $infile, $trim_len, $db, $out, $where, $silent) = @_;
+   open my $in, '<', $infile or die "Error: Could not read file '$infile': $!\n";
+   my ($record, $start, $end, $strand, $seq, $seqid) =
+      (undef, undef, undef, undef, undef, undef);
+   my ($p_seqid, $p_start, $p_end, $p_strand) = ('', undef, undef, undef); # previous values
+   my $nof_seqs_w_matches = 0;
+   while (my $line = <$in>) {
+      if ($line =~ m/^Amplimer (\S+)/) {
+         # Start of record
+         $record = $1;
+      } elsif ($line =~ m/\s+Sequence: (\S+)/) {
+         $seqid = $1;
+         $seq = $db->get_Seq_by_id($seqid);
+      } elsif ($line =~ m/(\S+) hits forward strand at (\S+)/) {
+         $strand = ($fwd eq psearch2iupac($1)) ? 1 : -1;
+         $start = $2;
+      } elsif ($line =~ m/hits reverse strand at \[(\S+)\]/) {
+         $end = $1;
+         $end = $seq->length - $end + 1;
+      } elsif ($line =~ m/^\s+Amplimer length:/) {
+         # End of record
+         if (not $seqid eq $p_seqid) {
+            $nof_seqs_w_matches++;
+         }
+         if ( ($seqid  eq $p_seqid ) && ($start  eq $p_start ) && ($strand eq $p_strand)
+              && ( ($p_end eq $end) || (defined $trim_len) ) ) {
+            # This amplicon is a duplicate of the previous one. Skip it.
+            next;
+         }
+         $seq = $seq->trunc($start, $end);
+         $seq = $seq->revcom if $strand == -1;
+         finish_processing_seq($seq, $start, $end, $strand, $trim_len, $out,
+            $where, $silent, $p_seqid);
+         ($p_seqid, $p_start, $p_end, $p_strand) = ($seqid, $start, $end, $strand);
+         ($record, $start, $end, $strand, $seq, $seqid) =
+            (undef, undef, undef, undef, undef, undef);
+      }
+   }
+   close $in;
+   my $nof_seqs = scalar $db->get_all_primary_ids;
+   my $nof_seqs_wo_matches = $nof_seqs - $nof_seqs_w_matches;
+   return $nof_seqs_wo_matches, $nof_seqs;
+}
+
+
+my %saved_translations;
+sub psearch2iupac {
+   # IUPAC primer 'ANARA' is expressed by primersearch as 'A?A[GAR]A'
+   # Convert primersearch primer to IUPAC
+   my ($psearch) = @_;
+   if (not exists $saved_translations{$psearch}) {
+      my $iupac = $psearch;
+      # Replace ? by N
+      $iupac =~ s/\?/N/g;
+      # Replace bracketed content by single IUPAC character
+      my %primersearch_to_iupac = (
+        'ACM'     => 'M',
+        'AGR'     => 'R',
+        'ATW'     => 'W',
+        'CGS'     => 'S',
+        'CTY'     => 'Y',
+        'GKT'     => 'K',
+        'ACGMRSV' => 'V',
+        'ACHMTWY' => 'H',
+        'ADGKRTW' => 'D',
+        'BCGKSTY' => 'B',
+      );
+      $iupac =~ s#\[(\S+?)\]#$primersearch_to_iupac{join('', sort {$a cmp $b} (split //, $1))}#ge;
+      $saved_translations{$psearch} = $iupac;
+   }
+   return $saved_translations{$psearch};
+}
+
+
+sub run_primersearch {
+   my ($fwd, $rev, $target_seq_file, $output_file, $perc_errors) = @_;
+   my $primer_file = (tempfile)[1];
+   generate_primer_file($fwd, $rev, $primer_file);
+   my $args = {
+      -infile          => $primer_file,
+      -seqall          => $target_seq_file,
+      -outfile         => $output_file,
+      -mismatchpercent => $perc_errors,
+   };
+   my $factory = Bio::Factory::EMBOSS->new->program('primersearch')
+      or die "primersearch program not found\n";
+   $factory->run($args);
+   unlink $primer_file;
+   return 1;
+}
+
+
+sub generate_primer_file {
+   my ($fwd, $rev, $outfile) = @_;
+   open my $out, '>', $outfile or die "Error: Could not write file '$outfile': $!\n";
+   print $out "primers\t$fwd\t$rev\n";
+   close $out;
+   return 1;
+}
+
